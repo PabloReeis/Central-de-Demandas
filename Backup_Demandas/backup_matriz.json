@@ -1,0 +1,359 @@
+[
+  {
+    "id": "1781628702118",
+    "title": "CDNCOJIN3-1282 [SIAP] - Passar pro Wantuil",
+    "description": "",
+    "deadline": "2026-06-17",
+    "quadrant": "q3",
+    "completed": true,
+    "archived": true,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781628739800",
+    "title": "CDNCOJIN3-1281 [SIAP] - Passar pro Wantuil",
+    "description": "",
+    "deadline": "2026-06-17",
+    "quadrant": "q3",
+    "completed": true,
+    "archived": true,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781628939429",
+    "title": "DEVCOJIN3-7353 [SICC] - Passar pra Camilla",
+    "description": "",
+    "deadline": "2026-06-17",
+    "quadrant": "q3",
+    "completed": true,
+    "archived": false,
+    "completedAt": "17/06",
+    "developer": "Camilla"
+  },
+  {
+    "id": "1781629408150",
+    "title": "Alterar senha Hitss e solicitar Crachpa",
+    "description": "",
+    "deadline": "2026-06-16",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": null
+  },
+  {
+    "id": "1781630370335",
+    "title": "CDNCOJIN3-1170 [GPe-Istj]",
+    "description": "Validar as informações e Eviar o email Criação da unidade da Turma de Uniformização de Jurisprudência (TUJURIS) no sistema Gestão de Peças Eletrônicas (GPE-iSTJ), conforme as diretrizes da Resolução STJ/GP nº 10/2015\n\nsac@stj.jus.br\nTurma recursal \nLocalização (é feita por cidade)\nSubdivisão se haverá \nSigla \nAlguem que será responsável da unidade (administrador para",
+    "deadline": "2026-06-19",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781630728473",
+    "title": "Pontuar Horas jira",
+    "description": "Pontuar horas até o dia 19/06",
+    "deadline": "2026-06-19",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781632085925",
+    "title": "CH3676104",
+    "description": "Reinicio da Linjjipe-2\nGentileza reiniciar a Linjjipe-2 pois a mesma está estourando memória e identificamos também que o Glowroot http://glowroot-01.intra.tjmg.gov.br:4000/transaction/average está indisponível",
+    "deadline": "2026-06-16",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": "16/06"
+  },
+  {
+    "id": "1781632503446",
+    "title": "[SICC] x Vanilson CNPJ",
+    "description": "Solicitar a Vivi o SICC apontando para o endereço do do banco SUP2 do PJe",
+    "deadline": "2026-06-17",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781634428673",
+    "title": "CDNCOJIN3-1284",
+    "description": "CNPJ - Saldo - Verificar andamento junto ao Gilmar\n**Finalizou a montagem do ambiente e já está analisando",
+    "deadline": "2026-06-17",
+    "quadrant": "q2",
+    "completed": true,
+    "archived": true,
+    "completedAt": "16/06"
+  },
+  {
+    "id": "1781635490264",
+    "title": "CDNCOJIN3-1217 [SIAP] Passar pro Wantuil",
+    "description": "Passar pro Wantuil",
+    "deadline": "2026-06-17",
+    "quadrant": "q3",
+    "completed": true,
+    "archived": false,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781637009977",
+    "title": "CH3676404 [JPe] - Erro de memória AGE",
+    "description": "Validar amanhã\n*Solicitei ao Samuel que testasse novamente",
+    "deadline": "2026-06-17",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781643946525",
+    "title": "DEVCOJIN3-7097 [JPe]",
+    "description": "SEI recebido pela Raynara\n** Priorizado junto ao Igor",
+    "deadline": "2026-06-17",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781644569164",
+    "title": "CDNCOJIN3-1051",
+    "description": "Priorizado o CNPJ Alfanúmerico junto ao Fernando Braz",
+    "deadline": "2026-06-16",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": "16/06"
+  },
+  {
+    "id": "1781644722866",
+    "title": "DEVCOJIN3-7296 [Themis]",
+    "description": "Verificar com o Filipe, pois foi devolvido o processo",
+    "deadline": "2026-06-17",
+    "quadrant": "q1",
+    "completed": true,
+    "archived": true,
+    "completedAt": "17/06"
+  },
+  {
+    "id": "1781645918888",
+    "title": "CDNCOJIN3-1305",
+    "description": "Acompanhamento pós implantação",
+    "deadline": "2026-06-17",
+    "quadrant": "q2",
+    "completed": true,
+    "archived": true,
+    "completedAt": "16/06"
+  },
+  {
+    "id": "1781647762540",
+    "title": "CDNCOJIN1-560 - Lançar horas",
+    "description": "",
+    "deadline": "2026-06-30",
+    "quadrant": "q2",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781649639112",
+    "title": "CDNCOJIN1-41 [CADEJ]",
+    "description": "Validar com a Audinéia",
+    "deadline": null,
+    "quadrant": "support_inbox",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781706287510",
+    "title": "CDNCOJIN3-385",
+    "description": "Validar com a Marina",
+    "deadline": "2026-06-17",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781715719208",
+    "title": "CESEC-1693",
+    "description": "Levantamento IAM - Logs do Themis",
+    "deadline": "2026-07-06",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781715753667",
+    "title": "CESEC-1694",
+    "description": "Levantamento IAM - Logs do SIAP",
+    "deadline": "2026-07-06",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781715864826",
+    "title": "CESEC-1836",
+    "description": "Mapeamento de Credenciais e Ciclo de Vida - JPe",
+    "deadline": "2026-07-06",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781715908281",
+    "title": "CESEC-1835",
+    "description": "Mapeamento de Credenciais e Ciclo de Vida - RUPE",
+    "deadline": "2026-07-06",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781715954216",
+    "title": "CESEC-1837",
+    "description": "Mapeamento de Credenciais e Ciclo de Vida - Themis",
+    "deadline": "2026-07-06",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781715981800",
+    "title": "CESEC-1838",
+    "description": "Mapeamento de Credenciais e Ciclo de Vida - SIAP",
+    "deadline": "2026-07-06",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781716089062",
+    "title": "CDNCOJIN3-741 - Lançar horas",
+    "description": "Partes devidamente cadastrado no SIAP mas não aparecem no Themis",
+    "deadline": "2026-06-19",
+    "quadrant": "q4",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781716555488",
+    "title": "CDNCOJIN3-1283",
+    "description": "Criar card para pontuar horas da priorização",
+    "deadline": "2026-06-29",
+    "quadrant": "q4",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781716674990",
+    "title": "CDNCOJIN3-1282",
+    "description": "Criar card para apontar horas de priorização",
+    "deadline": "2026-06-29",
+    "quadrant": "q4",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781717292405",
+    "title": "DEVCOJIN3-7353",
+    "description": "Criar o card de contato com os consultores 20m",
+    "deadline": "2026-06-29",
+    "quadrant": "q4",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781717364268",
+    "title": "DEVCOJIN3-7367",
+    "description": "Pontuar horas jira análise",
+    "deadline": "2026-06-29",
+    "quadrant": "q4",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781725542273",
+    "title": "CDNCOJIN3-1300 [JPe]",
+    "developer": "",
+    "description": "Falha na comunicação de baixa à origem",
+    "deadline": "2026-06-22",
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781725626383",
+    "title": "CDNCOJIN3-1298[JPe]- IN2315293",
+    "developer": "",
+    "description": "Falha na comunicação de baixa à origem",
+    "deadline": "2026-06-22",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781725661094",
+    "title": "CDNCOJIN3-1302 [JPe] - IN2315278",
+    "developer": "",
+    "description": "Falha persistente na comunicação de baixa à origem",
+    "deadline": null,
+    "quadrant": "q3",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781725743325",
+    "title": "CDNCOJIN3-1299 [JPe] IN2315256",
+    "developer": "",
+    "description": "Erros 400 e Falha Geral 100501 ao criar remessa de virtualização (mov. 2015-6",
+    "deadline": "2026-06-18",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781725812612",
+    "title": "CDNCOJIN3-1303 [JPe] - IN2314371",
+    "developer": "",
+    "description": "",
+    "deadline": "2026-06-18",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  },
+  {
+    "id": "1781725904387",
+    "title": "CDNCOJIN3-1301 [SIAP]",
+    "developer": "",
+    "description": "Travamento em tela após login",
+    "deadline": "2026-06-18",
+    "quadrant": "q1",
+    "completed": false,
+    "archived": false,
+    "completedAt": null
+  }
+]
