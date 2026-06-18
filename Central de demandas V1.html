@@ -422,9 +422,6 @@
             // mas garantimos que o localStorage esteja atualizado.
         });
 
-        // Configuração do Webhook / API do Google Sheets (Ex: SheetDB, NoCodeDB ou Apps Script)
-        const SHEET_API_URL = 'https://sheetdb.io/api/v1/SUA_API_ID';
-
         async function updateApp() {
             // Sempre salva no localStorage como primeira camada de segurança
             localStorage.setItem('my_demands', JSON.stringify(demands));
@@ -432,20 +429,6 @@
             if (persistentFileHandle) {
                 await saveDemandsToFile(persistentFileHandle);
             }
-
-            // Sincronização em tempo real com o Google Sheets
-            if (SHEET_API_URL && !SHEET_API_URL.includes('SUA_API_ID')) {
-                try {
-                    await fetch(SHEET_API_URL, {
-                        method: 'POST', // Altere para PUT se sua API estiver configurada para sobrescrever a planilha inteira
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ data: demands })
-                    });
-                } catch (err) {
-                    console.error("Erro ao sincronizar dados com o Google Sheets:", err);
-                }
-            }
-
             renderDemands();
         }
 
@@ -1191,23 +1174,6 @@
         document.getElementById('support-form').addEventListener('submit', enviarFilaSuporte);
 
         async function initApp() {
-            // Carrega os dados atualizados do Google Sheets em tempo real
-            if (SHEET_API_URL && !SHEET_API_URL.includes('SUA_API_ID')) {
-                try {
-                    const response = await fetch(SHEET_API_URL);
-                    if (response.ok) {
-                        const resData = await response.json();
-                        // Trata o retorno caso venha envelopado (ex: { data: [...] }) ou como array direto
-                        const cloudDemands = Array.isArray(resData) ? resData : (resData.data || []);
-                        if (cloudDemands.length > 0) {
-                            demands = cloudDemands;
-                        }
-                    }
-                } catch (err) {
-                    console.error("Erro ao carregar dados da nuvem. Usando dados locais como fallback:", err);
-                }
-            }
-
             // Tenta restaurar arquivo persistente salvo anteriormente
             const savedHandle = await getStoredHandle();
             if (savedHandle && window.showOpenFilePicker) {
