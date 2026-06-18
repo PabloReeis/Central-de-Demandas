@@ -87,7 +87,7 @@
                 <button onclick="toggleSidebar(true)" class="w-full bg-gray-800 hover:bg-gray-900 text-white text-xs font-medium py-2 px-3 rounded-lg transition flex items-center justify-between cursor-pointer shadow-xs">
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-box-archive"></i> Arquivadas</span>
                 </button>
-                <button onclick="archiveCompleted()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-medium py-2 px-3 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                <button onclick="limparDemandasConcluidas()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-medium py-2 px-3 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-compress"></i> Limpar Concluídas
                 </button>
             </div>
@@ -281,19 +281,6 @@
                 <div id="workload-completed-zone" data-zone="completed" class="space-y-2 min-h-[50px] border-2 border-dashed border-gray-100 rounded-lg p-2 bg-gray-50/30">
                     <span class="text-[11px] text-gray-400 italic">Arraste para cá para concluir ou desatribuir.</span>
                 </div>
-            </div>
-
-            </div>
-
-            <div class="border-t border-gray-100 pt-4">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-                    <i class="fa-solid fa-check-double text-emerald-500"></i> CONCLUÍDAS / NÃO ATRIBUÍDAS
-                </h3>
-                <div id="workload-completed-zone" data-zone="completed" class="space-y-2 min-h-[50px] border-2 border-dashed border-gray-100 rounded-lg p-2 bg-gray-50/30">
-                    <span class="text-[11px] text-gray-400 italic">Arraste para cá para concluir ou desatribuir.</span>
-                </div>
-            </div>
-
             </div>
 
             <div class="mt-auto pt-4 border-t border-gray-100">
@@ -763,7 +750,7 @@
             updateApp();
         }
 
-        function archiveCompleted() {
+        function limparDemandasConcluidas() {
             const completedActive = demands.filter(item => item.completed && !item.archived);
             if (completedActive.length === 0) return;
             demands = demands.map(item => {
@@ -859,89 +846,45 @@
             let dailyCompletedCount = 0; // Contagem de concluídas ATIVAS para o botão "Copiar Daily"
             const todayStr = new Date().toISOString().split('T')[0];
             
-            // Objeto para consolidar contagem de sistemas baseados em chaves textuais de colchetes, ex: [JPe]
             let systemCounts = {};
-            
-            // Carga de trabalho por equipe (Sistemas Principais do TJ)
-            const mainSystems = ["JPe", "SIAP", "Themis", "SIJUD"];
-            let teamWorkload = { "JPe": {}, "SIAP": {}, "Themis": {}, "SIJUD": {} }; // Structure: { Sistema: { Dev: { totalCount: 0, activeCards: [{id, title}] } } }
+            let teamWorkload = {}; // { Sistema: { Dev: { totalCount: 0, activeCards: [] } } }
 
             Object.keys(quadrants).forEach(q => {
                 const listEl = document.getElementById(`list-${q}`);
-                if (listEl) listEl.innerHTML = ''; // Limpa os quadrantes visíveis
+                if (listEl) listEl.innerHTML = '';
             });
 
             demands.forEach(demand => {
-                // --- CÁLCULO DA CARGA DE TRABALHO DA EQUIPE (para TODAS as demandas, incluindo arquivadas) ---
-                // Esta lógica agora processa todas as demandas para manter a contagem precisa,
-                // independentemente do status de arquivamento.
-                let currentSystemName = null;
-                let currentDevName = (demand.developer || '').trim();
-                let jiraCode = '';
-                let cardTitleForWorkload = demand.title; // Default to full title
-
-                // 1. Extrair Sistema (Ex: [SIAP] -> SIAP)
+                // Regex para Extração (Requisito 1)
                 const systemMatch = demand.title.match(/\[(.*?)\]/);
-                if (systemMatch && systemMatch[1]) {
-                    currentSystemName = systemMatch[1].trim();
-                    // 2. Extrair Código do Jira (Ex: CDNCOJIN3-1282) antes do colchete do sistema
-                    const partsBeforeSystem = demand.title.split(`[${currentSystemName}]`)[0].trim();
-                    const jiraCodeMatch = partsBeforeSystem.match(/^([A-Z0-9\-]+)/);
-                    if (jiraCodeMatch) {
-                        jiraCode = jiraCodeMatch[1].trim();
-                        cardTitleForWorkload = jiraCode; // Usar o código Jira para exibição na lista de carga de trabalho
-                    } else {
-                        cardTitleForWorkload = partsBeforeSystem; // Usar a parte antes do sistema se não houver código Jira
-                    }
-                } else {
-                    // Se não houver sistema, tentar obter o código Jira do início do título
-                    const jiraCodeMatch = demand.title.match(/^([A-Z0-9\-]+)/);
-                    if (jiraCodeMatch) {
-                        jiraCode = jiraCodeMatch[1].trim();
-                        cardTitleForWorkload = jiraCode;
-                    }
-                }
+                const sysName = systemMatch ? systemMatch[1].trim() : "Geral";
+                
+                const jiraMatch = demand.title.match(/^([A-Z0-9\-]+)/);
+                const jiraCode = jiraMatch ? jiraMatch[1].trim() : demand.title.substring(0, 15);
 
-                // 3. Extrair Nome do Desenvolvedor (se não estiver definido explicitamente)
-                if (!currentDevName && currentSystemName) {
-                    // Tentar encontrar "Passar pro/a [Nome do Dev]" no título ou descrição
+                let devName = (demand.developer || '').trim();
+                if (!devName) {
                     const devPattern = /(?:Passar\s+(?:pro|a)\s+)([A-Za-zÀ-ú\s]+)/i;
                     let devMatch = demand.title.match(devPattern);
-                    if (devMatch && devMatch[1]) {
-                        currentDevName = devMatch[1].trim();
-                    } else {
-                        devMatch = demand.description.match(devPattern);
-                        if (devMatch && devMatch[1]) {
-                            currentDevName = devMatch[1].trim();
-                        } else if (currentSystemName) {
-                            // Fallback: tentar inferir do título após o colchete do sistema (lógica anterior)
-                            const partsAfterSystem = demand.title.split(`[${currentSystemName}]`);
-                            if (partsAfterSystem.length > 1) {
-                                const potentialDevPart = partsAfterSystem[1].trim();
-                                const devMatchFallback = potentialDevPart.match(/^(?:[\s\-\:]*\s*)?([A-Za-zÀ-ú\s]+)/);
-                                if (devMatchFallback && devMatchFallback[1].trim().length > 2) {
-                                    currentDevName = devMatchFallback[1].trim();
-                                }
-                            }
-                        }
+                    if (!devMatch && demand.description) devMatch = demand.description.match(devPattern);
+                    if (devMatch) devName = devMatch[1].trim();
+                }
+
+                // Carga de Trabalho da Equipe (Computa arquivadas para score - Requisito 2)
+                if (devName && devName.length > 2) {
+                    if (!teamWorkload[sysName]) teamWorkload[sysName] = {};
+                    if (!teamWorkload[sysName][devName]) {
+                        teamWorkload[sysName][devName] = { totalCount: 0, activeCards: [] };
+                    }
+                    
+                    teamWorkload[sysName][devName].totalCount++; // Incrementa score (incluindo ocultos)
+                    
+                    if (!demand.completed && !demand.archived) {
+                        teamWorkload[sysName][devName].activeCards.push({ id: demand.id, title: jiraCode });
                     }
                 }
 
-                const foundSysForWorkload = mainSystems.find(s => s.toLowerCase() === (currentSystemName || '').toLowerCase());
-                if (foundSysForWorkload && currentDevName && currentDevName.length > 2) {
-                    if (!teamWorkload[foundSysForWorkload][currentDevName]) {
-                        teamWorkload[foundSysForWorkload][currentDevName] = { totalCount: 0, activeCards: [] };
-                    }
-                    teamWorkload[foundSysForWorkload][currentDevName].totalCount++; // Conta todas as demandas para este dev/sistema
-                    
-                    // Adicionar apenas a activeCards se não estiver concluída e não arquivada
-                    if (!demand.completed && !demand.archived) {
-                        teamWorkload[foundSysForWorkload][currentDevName].activeCards.push({
-                            id: demand.id,
-                            title: cardTitleForWorkload // Usar o código Jira extraído ou parte relevante
-                        });
-                    }
-                }
+                const currentSystemName = systemMatch ? systemMatch[1].trim() : null;
                 // --- FIM DO CÁLCULO DA CARGA DE TRABALHO ---
 
                 // --- Lógica para renderização e estatísticas da barra lateral (apenas para demandas NÃO ARQUIVADAS) ---
@@ -1040,48 +983,40 @@
             const workloadListEl = document.getElementById('team-workload-list');
             if (workloadListEl) {
                 let workloadHTML = '';
-                let hasAtleastOne = false;
-
-                mainSystems.forEach(sys => {
-                    const devs = teamWorkload[sys];
-                    const devNames = Object.keys(devs);
-                    
-                    if (devNames.length > 0) {
-                        hasAtleastOne = true;
+                const sortedSystems = Object.keys(teamWorkload).sort();
+                if (sortedSystems.length === 0) {
+                    workloadHTML = `<span class="text-[11px] text-gray-400 italic">Nenhuma atribuição detectada...</span>`;
+                } else {
+                    sortedSystems.forEach(sys => {
                         workloadHTML += `
                             <div class="mb-3">
-                                <div class="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-gray-500 border-b border-gray-50 pb-0.5">
-                                    <i class="fa-solid fa-folder-tree text-indigo-400"></i> ${sys.toUpperCase()}
+                                <div class="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-gray-500 border-b border-gray-50 pb-0.5 uppercase">
+                                    <i class="fa-solid fa-folder-tree text-indigo-400"></i> ${sys}
                                 </div>
                                 <div class="flex flex-col gap-1.5 pl-2">
-                                    ${devNames.sort().map(name => {
-                                        const devData = devs[name]; // { totalCount: 0, activeCards: [] }
-                                        const totalCount = devData.totalCount;
-                                        const isOverloaded = totalCount >= 5;
+                                    ${Object.keys(teamWorkload[sys]).sort().map(name => {
+                                        const devData = teamWorkload[sys][name];
+                                        const isOver = devData.totalCount >= 5;
                                         return `
                                             <div class="flex flex-col gap-1">
-                                                <div class="flex justify-between items-start text-[11px] ${isOverloaded ? 'text-red-600 font-bold' : 'text-gray-700'}">
-                                                    <span class="pr-2">${isOverloaded ? '<i class="fa-solid fa-triangle-exclamation text-[9px] mr-1"></i>' : ''}${name}</span>
-                                                    <span class="${isOverloaded ? 'bg-red-600 text-white shadow-sm' : 'bg-indigo-100 text-indigo-700'} px-1.5 py-0.5 rounded-full font-bold text-[9px] shrink-0">${totalCount}</span>
+                                                <div class="flex justify-between items-center text-[11px] ${isOver ? 'text-red-600 font-bold' : 'text-gray-700'}">
+                                                    <span class="truncate">${isOver ? '⚠️ ' : ''}${name}</span>
+                                                    <span class="${isOver ? 'bg-red-600 text-white' : 'bg-indigo-100 text-indigo-700'} px-1.5 py-0.5 rounded-full font-bold text-[9px]">${devData.totalCount}</span>
                                                 </div>
-                                                <ul id="dev-list-${sys.replace(/\s/g, '_')}-${name.replace(/\s/g, '_')}" data-system="${sys}" data-developer="${name}" class="space-y-1 min-h-[20px] border border-dashed border-gray-100 rounded-md p-1 bg-gray-50/30">
-                                                    ${devData.activeCards.length > 0 ? devData.activeCards.map(card => `
-                                                        <li class="workload-card flex justify-between items-center bg-white hover:bg-gray-100 border border-gray-200 rounded-md p-1.5 text-[11px] transition cursor-grab active:cursor-grabbing select-none" data-id="${card.id}">
-                                                            <span class="truncate text-gray-700">${card.title}</span>
-                                                            <button onclick="toggleComplete('${card.id}', true)" class="text-gray-400 hover:text-green-600 p-0.5" title="Marcar como concluída e arquivar"><i class="fa-solid fa-check"></i></button>
-                                                        </li>
-                                                    `).join('') : `<li class="text-[10px] text-gray-400 italic text-center py-1">Nenhuma ativa.</li>`}
+                                                <ul class="space-y-1">
+                                                    ${devData.activeCards.map(c => `
+                                                        <li class="bg-gray-50 border border-gray-200 rounded p-1 text-[10px] flex justify-between items-center">
+                                                            <span class="truncate font-mono">${c.title}</span>
+                                                            <button onclick="toggleComplete('${c.id}', true)" class="text-gray-400 hover:text-emerald-600"><i class="fa-solid fa-check"></i></button>
+                                                        </li>`).join('')}
                                                 </ul>
-                                            </div>
-                                        `;
+                                            </div>`;
                                     }).join('')}
                                 </div>
-                            </div>
-                        `;
-                    }
-                });
-
-                workloadListEl.innerHTML = hasAtleastOne ? workloadHTML : `<span class="text-[11px] text-gray-400 italic">Nenhuma atribuição detectada...</span>`;
+                            </div>`;
+                    });
+                }
+                workloadListEl.innerHTML = workloadHTML;
             }
 
             // Renderizar Quadrantes na Tela
@@ -1218,30 +1153,25 @@
             });
         }
 
-        document.getElementById('support-form').addEventListener('submit', (e) => {
+        async function enviarFilaSuporte(e) {
             e.preventDefault();
             const supportInput = document.getElementById('support-task-title');
             const titleText = supportInput.value.trim();
-            
+            if (!titleText) return;
             if (demands.some(d => !d.archived && d.title.toLowerCase() === titleText.toLowerCase())) {
                 alert(`A demanda "${titleText}" já existe!`);
                 return;
             }
-
             demands.push({
                 id: Date.now().toString(),
                 title: titleText,
-                description: '',
-                deadline: null,
-                quadrant: 'support_inbox',
-                completed: false,
-                archived: false,
-                completedAt: null
+                description: '', deadline: null, quadrant: 'support_inbox',
+                completed: false, archived: false, completedAt: null
             });
-
             supportInput.value = '';
-            updateApp();
-        });
+            await updateApp();
+        }
+        document.getElementById('support-form').addEventListener('submit', enviarFilaSuporte);
 
         async function initApp() {
             // Tenta restaurar arquivo persistente salvo anteriormente
