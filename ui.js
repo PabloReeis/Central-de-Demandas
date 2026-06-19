@@ -156,6 +156,10 @@ function openEditModal(id) {
     editTaskDeadline.value  = task.deadline   || '';
     editTaskQuadrant.value  = task.quadrant;
     editTaskDesc.value      = task.description || '';
+    // Load tags into checkboxes
+    document.querySelectorAll('.tag-checkbox').forEach(cb => {
+        cb.checked = (task.tags || []).includes(cb.value);
+    });
     editModal.classList.remove('hidden');
     setTimeout(() => editTaskTitle.focus(), 50);
 }
@@ -167,14 +171,27 @@ function closeEditModal() {
 
 editForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = editTaskId.value;
+    const id       = editTaskId.value;
+    const newTags  = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
+    const newQuadrant = editTaskQuadrant.value;
     demands = demands.map(item => {
         if (item.id === id) {
+            const oldQ = item.quadrant;
             item.title       = editTaskTitle.value.trim();
             item.developer   = editTaskDeveloper.value.trim();
             item.deadline    = editTaskDeadline.value || null;
-            item.quadrant    = editTaskQuadrant.value;
+            item.quadrant    = newQuadrant;
             item.description = editTaskDesc.value.trim();
+            item.tags        = newTags;
+            if (!item.history) item.history = [];
+            if (oldQ !== newQuadrant) {
+                item.history.push({
+                    date: new Date().toLocaleDateString('pt-BR').substring(0, 5),
+                    from: oldQ,
+                    to:   newQuadrant,
+                    note: 'Movida via edição',
+                });
+            }
         }
         return item;
     });
@@ -201,6 +218,8 @@ document.addEventListener('keydown', (e) => {
     // Escape: fecha modais
     if (e.key === 'Escape') {
         if (!editModal.classList.contains('hidden')) closeEditModal();
+        const reportModal = document.getElementById('report-modal');
+        if (reportModal && !reportModal.classList.contains('hidden')) closeReportModal();
         const confirm = document.getElementById('app-confirm');
         if (confirm) confirm.remove();
     }

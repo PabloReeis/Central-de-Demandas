@@ -15,6 +15,64 @@ function getJiraIcon(title) {
     return '<i class="fa-solid fa-circle-nodes text-gray-400 mr-1.5"></i>';
 }
 
+// ── Modo Foco ────────────────────────────────────────────────
+let focusMode = false;
+
+function toggleFocusMode() {
+    focusMode = !focusMode;
+    const btn = document.getElementById('btn-focus-mode');
+    const q2 = document.getElementById('quadrant-q2');
+    const q3 = document.getElementById('quadrant-q3');
+    const q4 = document.getElementById('quadrant-q4');
+    if (focusMode) {
+        [q2, q3, q4].forEach(el => { if (el) el.classList.add('hidden'); });
+        document.getElementById('quadrant-q1')?.classList.remove('md:col-span-1');
+        document.getElementById('quadrant-q1')?.classList.add('md:col-span-2');
+        btn.classList.replace('bg-gray-100', 'bg-indigo-600');
+        btn.classList.replace('text-gray-700', 'text-white');
+        btn.innerHTML = '<i class="fa-solid fa-compress mr-1.5"></i> Sair do Foco';
+        showToast('Modo Foco ativado — só Q1 visível', 'info', 2000);
+    } else {
+        [q2, q3, q4].forEach(el => { if (el) el.classList.remove('hidden'); });
+        document.getElementById('quadrant-q1')?.classList.add('md:col-span-1');
+        document.getElementById('quadrant-q1')?.classList.remove('md:col-span-2');
+        btn.classList.replace('bg-indigo-600', 'bg-gray-100');
+        btn.classList.replace('text-white', 'text-gray-700');
+        btn.innerHTML = '<i class="fa-solid fa-crosshairs mr-1.5"></i> Modo Foco Q1';
+    }
+}
+
+// ── Etiquetas ────────────────────────────────────────────────
+const TAGS = {
+    blocked:  { label: 'Bloqueada',        color: 'bg-red-100 text-red-700 border-red-200' },
+    review:   { label: 'Em Revisão',       color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    waiting:  { label: 'Ag. Cliente',      color: 'bg-amber-100 text-amber-700 border-amber-200' },
+    testing:  { label: 'Em Testes',        color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    deploy:   { label: 'Ag. Deploy',       color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+};
+
+function getTagBadges(tags) {
+    if (!tags || tags.length === 0) return '';
+    return tags.map(t => {
+        const cfg = TAGS[t] || { label: t, color: 'bg-gray-100 text-gray-600 border-gray-200' };
+        return `<span class="text-[9px] px-1.5 py-0.5 rounded-full border font-semibold ${cfg.color}">${cfg.label}</span>`;
+    }).join('');
+}
+
+function getQuadrantLabel(q) {
+    const map = { q1: 'Q1 Fazer Agora', q2: 'Q2 Agendar', q3: 'Q3 Delegar', q4: 'Q4 Eliminar', support_inbox: 'Fila Suporte' };
+    return map[q] || q;
+}
+
+function getHistoryHTML(history) {
+    if (!history || history.length === 0) return '';
+    return history.slice().reverse().map(h => `
+        <div class="flex items-start gap-1.5 text-[10px] text-gray-500">
+            <i class="fa-solid fa-clock-rotate-left text-[9px] mt-0.5 text-gray-400"></i>
+            <span><strong>${h.date}</strong> — ${h.note}${h.from ? ` <span class="text-gray-400">(${getQuadrantLabel(h.from)} → ${getQuadrantLabel(h.to)})</span>` : ''}</span>
+        </div>`).join('');
+}
+
 function getDeadlineBadge(deadlineStr, isCompleted) {
     if (!deadlineStr) return '';
     const deadlineDate = new Date(deadlineStr + 'T23:59:59');
@@ -49,7 +107,6 @@ form.addEventListener('submit', async (e) => {
     const inputTitle = taskTitleInput.value.trim();
     if (demands.some(d => !d.archived && d.title.toLowerCase() === inputTitle.toLowerCase())) {
         showToast(`⚠️ A demanda já existe na matriz!`, 'warning'); return;
-        return;
     }
     demands.push({
         id: Date.now().toString(),
@@ -59,6 +116,7 @@ form.addEventListener('submit', async (e) => {
         deadline: taskDeadlineInput.value || null,
         quadrant: taskQuadrantSelect.value,
         completed: false, archived: false, completedAt: null,
+        tags: [], history: [{ date: new Date().toLocaleDateString('pt-BR').substring(0,5), from: null, to: taskQuadrantSelect.value, note: 'Criada' }],
     });
     taskTitleInput.value = taskDeveloperInput.value = taskDescInput.value = taskDeadlineInput.value = '';
     await updateApp();
@@ -72,12 +130,12 @@ async function enviarFilaSuporte(e) {
     if (!title) return;
     if (demands.some(d => !d.archived && d.title.toLowerCase() === title.toLowerCase())) {
         showToast('Essa demanda já existe!', 'warning'); return;
-        return;
     }
     demands.push({
         id: Date.now().toString(), title,
         description: '', deadline: null, quadrant: 'support_inbox',
         completed: false, archived: false, completedAt: null,
+        tags: [], history: [{ date: new Date().toLocaleDateString('pt-BR').substring(0,5), from: null, to: 'support_inbox', note: 'Criada via Fila Suporte' }],
     });
     input.value = '';
     await updateApp();
@@ -140,7 +198,17 @@ function initDragAndDrop() {
                 const newQuadrant = evt.to.getAttribute('data-quadrant');
                 const taskId      = evt.item.getAttribute('data-id');
                 if (!newQuadrant || !taskId) return;
-                demands = demands.map(t => { if (t.id === taskId) t.quadrant = newQuadrant; return t; });
+                demands = demands.map(t => {
+                    if (t.id === taskId) {
+                        const oldQ = t.quadrant;
+                        t.quadrant = newQuadrant;
+                        if (oldQ !== newQuadrant) {
+                            if (!t.history) t.history = [];
+                            t.history.push({ date: new Date().toLocaleDateString('pt-BR').substring(0,5), from: oldQ, to: newQuadrant, note: 'Movida por drag-drop' });
+                        }
+                    }
+                    return t;
+                });
                 updateApp();
             },
         });
@@ -335,6 +403,8 @@ function renderQuadrants(quadrants) {
             const hasDesc    = item.description && item.description.trim() !== '';
             const deadlineBadge = getDeadlineBadge(item.deadline, item.completed);
             const icon       = getJiraIcon(item.title);
+            const tagBadges  = getTagBadges(item.tags || []);
+            const historyHTML = getHistoryHTML(item.history || []);
 
             let displayDev = (item.developer || '').trim();
             if (!displayDev) {
@@ -356,6 +426,7 @@ function renderQuadrants(quadrants) {
                         <span class="text-xs font-medium leading-snug break-all ${item.completed ? 'line-through text-gray-400' : 'text-gray-800'}">
                             ${icon}${item.title}${fireBadge}
                         </span>
+                        ${tagBadges ? `<div class="flex flex-wrap gap-1 mt-0.5">${tagBadges}</div>` : ''}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
                         <button onclick="copyTaskToClipboard('${item.id}')" class="text-gray-300 hover:text-indigo-500 p-1 rounded" title="Copiar"><i class="fa-solid fa-share-nodes text-xs"></i></button>
@@ -364,10 +435,14 @@ function renderQuadrants(quadrants) {
                     </div>
                 </div>
                 ${isExpanded ? `
-                <div class="mt-2 pt-2 border-t border-gray-200 flex flex-wrap items-center gap-1.5">
-                    ${deadlineBadge}
-                    ${devBadge}
-                    ${hasDesc ? `<p class="w-full text-[11px] text-gray-500 mt-1 leading-relaxed">${item.description}</p>` : ''}
+                <div class="mt-2 pt-2 border-t border-gray-200 flex flex-col gap-1.5">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        ${deadlineBadge}
+                        ${devBadge}
+                        ${tagBadges}
+                    </div>
+                    ${hasDesc ? `<p class="text-[11px] text-gray-500 leading-relaxed">${item.description}</p>` : ''}
+                    ${historyHTML ? `<div class="mt-1 pt-1 border-t border-gray-100 flex flex-col gap-0.5">${historyHTML}</div>` : ''}
                     ${item.completedAt ? `<span class="text-[10px] text-gray-400"><i class="fa-solid fa-flag-checkered mr-1"></i>Concluída ${item.completedAt}</span>` : ''}
                 </div>` : ''}`;
             listEl.appendChild(li);
@@ -432,14 +507,14 @@ async function initApp() {
     if (demands.length === 0) {
         const stored = localStorage.getItem('my_demands');
         demands = stored ? JSON.parse(stored).map(d => ({
-            archived: false, description: '', completedAt: null, ...d,
+            archived: false, description: '', completedAt: null, tags: [], history: [], ...d,
         })) : [];
         // Mostra indicador local se não há nenhuma outra fonte ativa
         if (!isSupabaseConfigured() && !persistentFileHandle) {
             updateBackupStatus('local');
         }
     } else {
-        demands = demands.map(d => ({ archived: false, description: '', completedAt: null, ...d }));
+        demands = demands.map(d => ({ archived: false, description: '', completedAt: null, tags: [], history: [], ...d }));
     }
 
     if (scratchpad) scratchpad.value = localStorage.getItem('my_scratchpad') || '';

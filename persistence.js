@@ -5,17 +5,15 @@
 const SUPABASE_URL      = 'https://wkyixznsqdxgvoqudono.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreWl4em5zcWR4Z3ZvcXVkb25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjEyMjEsImV4cCI6MjA5NzM5NzIyMX0.oYGISjUZ__M4Ogyi6UuwX789Gxul2g2hApuCwzvxyls';
 
-// 🔒 Segredo adicional — adicione o mesmo valor na policy do Supabase
-// SQL: create policy "Acesso por secret" on demands
-//        for all using (current_setting('request.headers')::json->>'x-app-secret' = 'MESMO_VALOR_AQUI')
-//        with check (current_setting('request.headers')::json->>'x-app-secret' = 'MESMO_VALOR_AQUI');
-const APP_SECRET = 'central-v3-2025';
+// 🔒 Troque para algo aleatório e atualize a policy no Supabase
+const APP_SECRET = 'xK9#mP2$cV3-wQ7@zR';
 
 const DB_NAME    = 'FileSystemDB';
 const STORE_NAME = 'Handles';
 
 let persistentFileHandle = null;
 let supabaseOnline       = false;
+let realtimeChannel      = null;
 
 // ── Helpers Supabase ────────────────────────────────────────
 
@@ -28,7 +26,7 @@ function supabaseHeaders() {
         'Content-Type':  'application/json',
         'apikey':        SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'x-app-secret':  APP_SECRET,   // 🔒 header de segurança extra
+        'x-app-secret':  APP_SECRET,
         'Prefer':        'return=minimal',
     };
 }
@@ -37,13 +35,15 @@ function toRow(d) {
     return {
         id:           d.id,
         title:        d.title,
-        developer:    d.developer   || null,
-        description:  d.description || null,
-        deadline:     d.deadline    || null,
+        developer:    d.developer    || null,
+        description:  d.description  || null,
+        deadline:     d.deadline     || null,
         quadrant:     d.quadrant,
         completed:    d.completed,
         archived:     d.archived,
-        completed_at: d.completedAt || null,
+        completed_at: d.completedAt  || null,
+        tags:         JSON.stringify(d.tags || []),
+        history:      JSON.stringify(d.history || []),
     };
 }
 
@@ -58,7 +58,13 @@ function fromRow(r) {
         completed:   r.completed,
         archived:    r.archived,
         completedAt: r.completed_at || null,
+        tags:        safeParseJSON(r.tags, []),
+        history:     safeParseJSON(r.history, []),
     };
+}
+
+function safeParseJSON(val, fallback) {
+    try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
 }
 
 async function supabaseFetchAll() {
@@ -92,7 +98,51 @@ async function supabaseDeleteMissing(demandList) {
     });
 }
 
-// ── Indicador visual de backup ──────────────────────────────
+// ── Realtime ────────────────────────────────────────────────
+
+function initRealtime() {
+    if (!isSupabaseConfigured() || realtimeChannel) return;
+
+    // Usa WebSocket nativo do Supabase Realtime
+    const wsUrl = SUPABASE_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SUPABASE_ANON_KEY + '&vsn=1.0.0';
+    const socket = new WebSocket(wsUrl);
+    let heartbeat;
+
+    socket.onopen = () => {
+        // Autenticação e subscribe na tabela demands
+        socket.send(JSON.stringify({ topic: 'realtime:public:demands', event: 'phx_join', payload: { user_token: SUPABASE_ANON_KEY }, ref: '1' }));
+        heartbeat = setInterval(() => {
+            socket.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: '2' }));
+        }, 20000);
+        realtimeChannel = socket;
+        console.log('🔴 Realtime conectado');
+    };
+
+    socket.onmessage = async (e) => {
+        const msg = JSON.parse(e.data);
+        // Qualquer mudança na tabela dispara re-fetch
+        if (msg.event === 'INSERT' || msg.event === 'UPDATE' || msg.event === 'DELETE') {
+            try {
+                const fresh = await supabaseFetchAll();
+                demands = fresh;
+                renderDemands();
+                showToast('🔄 Dados atualizados em tempo real', 'info', 2000);
+            } catch (err) {
+                console.warn('Realtime fetch falhou:', err);
+            }
+        }
+    };
+
+    socket.onerror = () => console.warn('Realtime: erro de conexão');
+    socket.onclose = () => {
+        clearInterval(heartbeat);
+        realtimeChannel = null;
+        // Tenta reconectar após 5s
+        setTimeout(initRealtime, 5000);
+    };
+}
+
+// ── Indicador visual ────────────────────────────────────────
 
 function updateBackupStatus(state) {
     const container = document.getElementById('backup-status-container');
@@ -174,8 +224,7 @@ async function saveDemandsToFile(handle) {
     if (!handle) return;
     try {
         if (await handle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
-            updateBackupStatus('paused');
-            return;
+            updateBackupStatus('paused'); return;
         }
         const writable = await handle.createWritable();
         await writable.write(JSON.stringify(demands, null, 2));
@@ -212,39 +261,39 @@ async function exportData() {
             await storeHandle(persistentFileHandle);
         }
         await saveDemandsToFile(persistentFileHandle);
-        alert('✅ Backup fixado e salvo com sucesso!');
+        showToast('✅ Backup salvo com sucesso!');
     } catch (err) {
-        if (err.name !== 'AbortError') alert('Não foi possível acessar o arquivo de backup.');
+        if (err.name !== 'AbortError') showToast('Não foi possível acessar o arquivo.', 'error');
     }
 }
 
 async function importData() {
     if (!window.showOpenFilePicker) {
-        alert('Seu navegador não suporta a File System Access API. Use Chrome ou Edge.');
-        return;
+        showToast('Use Chrome ou Edge para importar arquivos.', 'warning'); return;
     }
     try {
         const [fileHandle] = await window.showOpenFilePicker({
             types: [{ description: 'Demandas JSON', accept: { 'application/json': ['.json'] } }],
             multiple: false,
         });
-        if (!confirm(`Conectar "${fileHandle.name}" para salvamento automático? Os dados atuais serão substituídos.`)) return;
-
-        let perm = await fileHandle.queryPermission({ mode: 'readwrite' });
-        if (perm !== 'granted') perm = await fileHandle.requestPermission({ mode: 'readwrite' });
-
-        persistentFileHandle = fileHandle;
-        await storeHandle(fileHandle);
-        await loadDemandsFromFile(persistentFileHandle);
-        await updateApp();
-        alert(`✅ Backup Automático Ativado!\n"${fileHandle.name}" será atualizado a cada mudança.`);
+        showConfirm(`Conectar "${fileHandle.name}"? Os dados atuais serão substituídos.`, async () => {
+            let perm = await fileHandle.queryPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') perm = await fileHandle.requestPermission({ mode: 'readwrite' });
+            persistentFileHandle = fileHandle;
+            await storeHandle(fileHandle);
+            await loadDemandsFromFile(persistentFileHandle);
+            await updateApp();
+            showToast(`✅ "${fileHandle.name}" conectado para auto-save!`);
+        });
     } catch (err) {
-        if (err.name !== 'AbortError') alert('Falha ao importar. Verifique permissões ou formato do arquivo.');
+        if (err.name !== 'AbortError') showToast('Falha ao importar arquivo.', 'error');
     }
 }
 
 async function loadDemandsFromFile(handle) {
     const file = await handle.getFile();
     const text = await file.text();
-    demands = JSON.parse(text).map(d => ({ archived: false, description: '', completedAt: null, ...d }));
+    demands = JSON.parse(text).map(d => ({
+        archived: false, description: '', completedAt: null, tags: [], history: [], ...d,
+    }));
 }

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -90,6 +91,9 @@
                 </button>
                 <button onclick="limparDemandasConcluidas()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-medium py-2 px-3 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-compress"></i> Limpar Concluídas
+                </button>
+                <button onclick="openReportModal()" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-medium py-2 px-3 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-chart-bar"></i> Relatório Semanal
                 </button>
             </div>
 
@@ -215,8 +219,12 @@
                 </form>
             </section>
 
-            <!-- Indicador de sistema ativo -->
-            <div class="flex flex-wrap items-center justify-end gap-2 mb-2 pt-2 border-b border-gray-100 pb-2">
+            <!-- Indicador de sistema ativo + modo foco -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 pt-2 border-b border-gray-100 pb-2">
+                <button id="btn-focus-mode" onclick="toggleFocusMode()"
+                        class="text-[11px] bg-gray-100 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-crosshairs mr-1.5"></i> Modo Foco Q1
+                </button>
                 <div id="active-system-indicator" class="hidden text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-lg border border-indigo-100 flex items-center gap-1.5">
                     <span>Filtrado por: <strong id="active-system-name">None</strong></span>
                     <button onclick="filterBySystem(null)" class="hover:text-red-500 cursor-pointer ml-1 font-bold"><i class="fa-solid fa-xmark"></i></button>
@@ -225,7 +233,7 @@
 
             <!-- Matriz Eisenhower: 4 quadrantes -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-xl border-t-4 border-red-500 border-x border-b border-gray-200">
+                <div id="quadrant-q1" class="bg-white p-4 rounded-xl border-t-4 border-red-500 border-x border-b border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-red-700 uppercase text-xs flex items-center gap-1.5">
                             <span class="bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded-full">Q1</span>
@@ -236,7 +244,7 @@
                     <ul id="list-q1" data-quadrant="q1" class="space-y-2 min-h-[100px]"></ul>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl border-t-4 border-blue-500 border-x border-b border-gray-200">
+                <div id="quadrant-q2" class="bg-white p-4 rounded-xl border-t-4 border-blue-500 border-x border-b border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-blue-700 uppercase text-xs flex items-center gap-1.5">
                             <span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded-full">Q2</span> Agendar
@@ -246,7 +254,7 @@
                     <ul id="list-q2" data-quadrant="q2" class="space-y-2 min-h-[100px]"></ul>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl border-t-4 border-amber-500 border-x border-b border-gray-200">
+                <div id="quadrant-q3" class="bg-white p-4 rounded-xl border-t-4 border-amber-500 border-x border-b border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-amber-700 uppercase text-xs flex items-center gap-1.5">
                             <span class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full">Q3</span> Delegar
@@ -256,7 +264,7 @@
                     <ul id="list-q3" data-quadrant="q3" class="space-y-2 min-h-[100px]"></ul>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl border-t-4 border-gray-400 border-x border-b border-gray-200">
+                <div id="quadrant-q4" class="bg-white p-4 rounded-xl border-t-4 border-gray-400 border-x border-b border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-gray-600 uppercase text-xs flex items-center gap-1.5">
                             <span class="bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.5 rounded-full">Q4</span> Eliminar
@@ -395,6 +403,31 @@
                     <textarea id="edit-task-desc" rows="3"
                               class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg bg-white resize-none"></textarea>
                 </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Etiquetas</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" class="tag-checkbox accent-red-500" value="blocked">
+                            <span class="text-[11px] px-2 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200 font-semibold">Bloqueada</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" class="tag-checkbox accent-blue-500" value="review">
+                            <span class="text-[11px] px-2 py-0.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200 font-semibold">Em Revisão</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" class="tag-checkbox accent-amber-500" value="waiting">
+                            <span class="text-[11px] px-2 py-0.5 rounded-full border bg-amber-100 text-amber-700 border-amber-200 font-semibold">Ag. Cliente</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" class="tag-checkbox accent-purple-500" value="testing">
+                            <span class="text-[11px] px-2 py-0.5 rounded-full border bg-purple-100 text-purple-700 border-purple-200 font-semibold">Em Testes</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" class="tag-checkbox accent-emerald-500" value="deploy">
+                            <span class="text-[11px] px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-700 border-emerald-200 font-semibold">Ag. Deploy</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="pt-2 border-t border-gray-100 flex justify-end gap-2">
                     <button type="button" onclick="closeEditModal()"
                             class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:bg-gray-50 cursor-pointer">Cancelar</button>
@@ -405,10 +438,110 @@
         </div>
     </div>
 
+    <!-- ═══ MODAL DE RELATÓRIO SEMANAL ═══ -->
+    <div id="report-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+
+            <!-- Header -->
+            <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-chart-bar text-indigo-600 text-lg"></i>
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-sm">Relatório Semanal</h3>
+                        <p id="report-period" class="text-[11px] text-gray-400">—</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- Navegação de semanas -->
+                    <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1">
+                        <button onclick="reportPrev()" class="text-gray-400 hover:text-indigo-600 p-1 cursor-pointer" title="Semana anterior">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <span id="report-nav-label" class="text-[11px] font-medium text-gray-600 px-2 min-w-[90px] text-center">Semana atual</span>
+                        <button onclick="reportNext()" class="text-gray-400 hover:text-indigo-600 p-1 cursor-pointer" title="Próxima semana">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                    <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg cursor-pointer">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conteúdo rolável -->
+            <div class="overflow-y-auto p-5 flex flex-col gap-5">
+
+                <!-- KPIs -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center">
+                        <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wide mb-1">Criadas</p>
+                        <p id="kpi-created" class="text-2xl font-bold text-indigo-700">—</p>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-wide mb-1">Concluídas</p>
+                        <p id="kpi-completed" class="text-2xl font-bold text-emerald-700">—</p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Saldo</p>
+                        <p id="kpi-balance" class="text-2xl font-bold text-gray-700">—</p>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                        <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wide mb-1">Movimentações</p>
+                        <p id="kpi-moved" class="text-2xl font-bold text-amber-700">—</p>
+                    </div>
+                    <div class="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
+                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-1">Tempo médio Q1</p>
+                        <p id="kpi-q1time" class="text-2xl font-bold text-red-700">—</p>
+                    </div>
+                </div>
+
+                <!-- Charts linha 1 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                            <i class="fa-solid fa-circle-half-stroke text-indigo-400 mr-1"></i> Distribuição Atual por Quadrante
+                        </h4>
+                        <div class="relative h-48">
+                            <canvas id="chart-quadrant"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                            <i class="fa-solid fa-cube text-indigo-400 mr-1"></i> Criadas na Semana por Sistema
+                        </h4>
+                        <div class="relative h-48">
+                            <canvas id="chart-systems"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts linha 2 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                            <i class="fa-solid fa-user text-emerald-400 mr-1"></i> Concluídas por Responsável
+                        </h4>
+                        <div class="relative h-48">
+                            <canvas id="chart-devs"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+                            <i class="fa-solid fa-tags text-amber-400 mr-1"></i> Etiquetas Ativas (snapshot)
+                        </h4>
+                        <div id="report-tags" class="flex flex-wrap gap-2 pt-1"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- ═══ SCRIPTS (ordem importa) ═══ -->
     <script src="persistence.js"></script>
     <script src="ui.js"></script>
     <script src="demands.js"></script>
+    <script src="report.js"></script>
     <script>
         // Registro do Service Worker (PWA)
         if ('serviceWorker' in navigator) {
