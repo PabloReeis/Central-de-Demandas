@@ -392,35 +392,46 @@ function renderArchiveList(archivedList) {
 // ── Inicialização ────────────────────────────────────────────
 
 async function initApp() {
-    if (SHEET_API_URL && !SHEET_API_URL.includes('SUA_API_ID')) {
+    // 1. Tenta carregar do Supabase se configurado
+    if (isSupabaseConfigured()) {
         try {
-            const res  = await fetch(SHEET_API_URL);
-            if (res.ok) {
-                const data        = await res.json();
-                const cloudDemands = Array.isArray(data) ? data : (data.data || []);
-                if (cloudDemands.length > 0) demands = cloudDemands;
+            const cloudDemands = await supabaseFetchAll();
+            if (cloudDemands.length > 0) {
+                demands = cloudDemands;
+                updateBackupStatus('online');
             }
         } catch (err) {
-            console.error('Erro ao carregar dados da nuvem:', err);
+            console.error('Erro ao carregar do Supabase:', err);
+            updateBackupStatus('offline');
         }
     }
 
+    // 2. Tenta reconectar arquivo local salvo
     const savedHandle = await getStoredHandle();
     if (savedHandle && window.showOpenFilePicker) {
         try {
             persistentFileHandle = savedHandle;
             const perm = await persistentFileHandle.queryPermission({ mode: 'readwrite' });
-            updateBackupStatus(perm === 'granted');
+            if (perm === 'granted' && !isSupabaseConfigured()) {
+                updateBackupStatus('file');
+            } else if (perm !== 'granted') {
+                updateBackupStatus('paused');
+            }
         } catch (e) {
             console.log('Aguardando interação para reconectar arquivo...');
         }
     }
 
+    // 3. Fallback: localStorage
     if (demands.length === 0) {
         const stored = localStorage.getItem('my_demands');
         demands = stored ? JSON.parse(stored).map(d => ({
             archived: false, description: '', completedAt: null, ...d,
         })) : [];
+        // Mostra indicador local se não há nenhuma outra fonte ativa
+        if (!isSupabaseConfigured() && !persistentFileHandle) {
+            updateBackupStatus('local');
+        }
     } else {
         demands = demands.map(d => ({ archived: false, description: '', completedAt: null, ...d }));
     }
