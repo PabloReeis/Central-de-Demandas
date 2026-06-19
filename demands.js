@@ -48,7 +48,7 @@ form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const inputTitle = taskTitleInput.value.trim();
     if (demands.some(d => !d.archived && d.title.toLowerCase() === inputTitle.toLowerCase())) {
-        alert(`⚠️ A demanda "${inputTitle}" já existe na sua matriz!`);
+        showToast(`⚠️ A demanda já existe na matriz!`, 'warning'); return;
         return;
     }
     demands.push({
@@ -61,7 +61,8 @@ form.addEventListener('submit', async (e) => {
         completed: false, archived: false, completedAt: null,
     });
     taskTitleInput.value = taskDeveloperInput.value = taskDescInput.value = taskDeadlineInput.value = '';
-    updateApp();
+    await updateApp();
+    showToast('Demanda adicionada!');
 });
 
 async function enviarFilaSuporte(e) {
@@ -70,7 +71,7 @@ async function enviarFilaSuporte(e) {
     const title = input.value.trim();
     if (!title) return;
     if (demands.some(d => !d.archived && d.title.toLowerCase() === title.toLowerCase())) {
-        alert(`A demanda "${title}" já existe!`);
+        showToast('Essa demanda já existe!', 'warning'); return;
         return;
     }
     demands.push({
@@ -97,17 +98,22 @@ function toggleComplete(id, fromWorkload = false) {
 }
 
 function deleteDemand(id) {
-    if (!confirm('Excluir permanentemente esta demanda?')) return;
-    demands = demands.filter(d => d.id !== id);
-    if (expandedTaskId === id) expandedTaskId = null;
-    updateApp();
+    showConfirm('Excluir permanentemente esta demanda?', async () => {
+        demands = demands.filter(d => d.id !== id);
+        if (expandedTaskId === id) expandedTaskId = null;
+        await updateApp();
+        showToast('Demanda excluída.', 'error');
+    });
 }
 
 function limparDemandasConcluidas() {
     const completedActive = demands.filter(d => d.completed && !d.archived);
-    if (completedActive.length === 0) return;
-    demands = demands.map(d => { if (d.completed) d.archived = true; return d; });
-    updateApp();
+    if (completedActive.length === 0) { showToast('Nenhuma concluída para limpar.', 'info'); return; }
+    showConfirm(`Arquivar ${completedActive.length} demanda(s) concluída(s)?`, async () => {
+        demands = demands.map(d => { if (d.completed) d.archived = true; return d; });
+        await updateApp();
+        showToast(`${completedActive.length} demanda(s) arquivada(s).`);
+    });
 }
 
 function unarchiveDemand(id) {

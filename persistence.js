@@ -2,10 +2,14 @@
 // persistence.js — localStorage + File System API + Supabase
 // ============================================================
 
-// ⚠️ Preencha com os dados do seu projeto em supabase.com
-// Settings → API → Project URL e anon public key
 const SUPABASE_URL      = 'https://wkyixznsqdxgvoqudono.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreWl4em5zcWR4Z3ZvcXVkb25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjEyMjEsImV4cCI6MjA5NzM5NzIyMX0.oYGISjUZ__M4Ogyi6UuwX789Gxul2g2hApuCwzvxyls';
+
+// 🔒 Segredo adicional — adicione o mesmo valor na policy do Supabase
+// SQL: create policy "Acesso por secret" on demands
+//        for all using (current_setting('request.headers')::json->>'x-app-secret' = 'MESMO_VALOR_AQUI')
+//        with check (current_setting('request.headers')::json->>'x-app-secret' = 'MESMO_VALOR_AQUI');
+const APP_SECRET = 'central-v3-2025';
 
 const DB_NAME    = 'FileSystemDB';
 const STORE_NAME = 'Handles';
@@ -13,7 +17,7 @@ const STORE_NAME = 'Handles';
 let persistentFileHandle = null;
 let supabaseOnline       = false;
 
-// ── Helpers Supabase (fetch puro, sem SDK) ──────────────────
+// ── Helpers Supabase ────────────────────────────────────────
 
 function isSupabaseConfigured() {
     return !SUPABASE_URL.includes('SEU_PROJETO') && !SUPABASE_ANON_KEY.includes('SUA_ANON_KEY');
@@ -24,6 +28,7 @@ function supabaseHeaders() {
         'Content-Type':  'application/json',
         'apikey':        SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'x-app-secret':  APP_SECRET,   // 🔒 header de segurança extra
         'Prefer':        'return=minimal',
     };
 }
@@ -90,13 +95,12 @@ async function supabaseDeleteMissing(demandList) {
 // ── Indicador visual de backup ──────────────────────────────
 
 function updateBackupStatus(state) {
-    // state: 'online' | 'offline' | 'file' | 'paused' | 'local'
     const container = document.getElementById('backup-status-container');
     const text      = document.getElementById('backup-status-text');
     const btn       = document.getElementById('btn-reconnect-backup');
     if (!container) return;
 
-    container.classList.remove('hidden'); // garante que sempre aparece
+    container.classList.remove('hidden');
     btn.classList.add('hidden');
 
     const map = {
@@ -110,16 +114,13 @@ function updateBackupStatus(state) {
     if (state === 'paused') btn.classList.remove('hidden');
 }
 
-// ── updateApp: ponto central de persistência + render ───────
+// ── updateApp ───────────────────────────────────────────────
 
 async function updateApp() {
-    // 1. localStorage sempre (fallback imediato)
     localStorage.setItem('my_demands', JSON.stringify(demands));
 
-    // 2. Arquivo local se conectado
     if (persistentFileHandle) await saveDemandsToFile(persistentFileHandle);
 
-    // 3. Supabase se configurado
     if (isSupabaseConfigured()) {
         try {
             await supabaseUpsertAll(demands);
@@ -132,14 +133,13 @@ async function updateApp() {
             console.error('Erro Supabase:', err);
         }
     } else if (!persistentFileHandle) {
-        // Sem Supabase e sem arquivo: só localStorage
         updateBackupStatus('local');
     }
 
     renderDemands();
 }
 
-// ── IndexedDB: persiste o file handle ──────────────────────
+// ── IndexedDB ───────────────────────────────────────────────
 
 async function storeHandle(handle) {
     const req = indexedDB.open(DB_NAME, 1);
@@ -182,7 +182,7 @@ async function saveDemandsToFile(handle) {
         await writable.close();
         if (!supabaseOnline) updateBackupStatus('file');
     } catch (err) {
-        console.error('Erro no auto-save do arquivo:', err);
+        console.error('Erro no auto-save:', err);
         updateBackupStatus('paused');
     }
 }
@@ -239,7 +239,7 @@ async function importData() {
         await updateApp();
         alert(`✅ Backup Automático Ativado!\n"${fileHandle.name}" será atualizado a cada mudança.`);
     } catch (err) {
-        if (err.name !== 'AbortError') alert('Falha ao importar. Verifique as permissões ou o formato do arquivo.');
+        if (err.name !== 'AbortError') alert('Falha ao importar. Verifique permissões ou formato do arquivo.');
     }
 }
 
