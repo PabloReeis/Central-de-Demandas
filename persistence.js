@@ -4,7 +4,8 @@
 
 const DB_NAME    = 'FileSystemDB';
 const STORE_NAME = 'Handles';
-const SHEET_API_URL = 'https://sheetdb.io/api/v1/SUA_API_ID';
+const SUPABASE_URL      = 'https://wkyixznsqdxgvoqudono.supabase.co';  // ← sua URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreWl4em5zcWR4Z3ZvcXVkb25vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjEyMjEsImV4cCI6MjA5NzM5NzIyMX0.oYGISjUZ__M4Ogyi6UuwX789Gxul2g2hApuCwzvxyls';                     // ← sua key
 
 let persistentFileHandle = null;
 
