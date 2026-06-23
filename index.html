@@ -13,6 +13,14 @@
     <meta name="theme-color" content="#4f46e5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        .tab-active  { background-color: #4f46e5; color: #fff; }
+        .tab-inactive { background-color: transparent; color: #6b7280; }
+        .tab-inactive:hover { background-color: #f3f4f6; color: #374151; }
+        body.dark-mode .tab-inactive { color: #8da6bf; }
+        body.dark-mode .tab-inactive:hover { background-color: #112136; color: #dfe5ef; }
+        body.dark-mode #view-systems .bg-white { background-color: #0d1b2a !important; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen overflow-x-hidden">
 
@@ -153,6 +161,22 @@
         ════════════════════════════════════════════════════ -->
         <main class="flex-1 p-4 md:p-6 space-y-5">
 
+            <!-- Abas de navegação -->
+            <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit shadow-xs">
+                <button id="tab-btn-matrix" onclick="switchTab('matrix')"
+                        class="tab-btn tab-active text-xs font-semibold px-4 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-table-cells-large"></i> Matriz
+                </button>
+                <button id="tab-btn-queue" onclick="switchTab('queue')"
+                        class="tab-btn tab-inactive text-xs font-semibold px-4 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Fila de Entrada
+                    <span id="queue-tab-count" class="bg-indigo-100 text-indigo-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
+            </div>
+
+            <!-- ══ VIEW: MATRIZ ══ -->
+            <div id="view-matrix">
+
             <!-- Header: Prazos -->
             <header class="flex flex-col lg:flex-row justify-between items-center bg-white p-4 rounded-xl border border-gray-200 gap-4">
                 <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
@@ -273,7 +297,91 @@
                     </div>
                     <ul id="list-q4" data-quadrant="q4" class="space-y-2 min-h-[100px]"></ul>
                 </div>
-            </div>
+            </div><!-- end grid quadrants -->
+            </div><!-- end view-matrix -->
+
+            <!-- ══ VIEW: FILA DE ENTRADA ══ -->
+            <div id="view-queue" class="hidden">
+                <div class="flex flex-col lg:flex-row gap-5">
+
+                    <!-- COLUNA ESQUERDA: Formulário + Gerenciar Sistemas -->
+                    <div class="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+
+                        <!-- Formulário nova demanda -->
+                        <section class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                            <h2 class="text-sm font-bold mb-3 text-gray-800 flex items-center gap-2">
+                                <i class="fa-solid fa-plus-circle text-indigo-500"></i> Nova Demanda
+                            </h2>
+                            <form id="queue-form" class="space-y-2.5">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Código / Título <span class="text-red-500">*</span></label>
+                                    <input type="text" id="queue-title" required placeholder="Ex: CDNCOJIN3-1418"
+                                           class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Sistema <span class="text-red-500">*</span></label>
+                                    <select id="queue-system" required
+                                            class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                        <option value="">Selecione o sistema...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Responsável</label>
+                                    <input type="text" id="queue-developer" placeholder="Nome do Dev"
+                                           class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Descrição</label>
+                                    <input type="text" id="queue-desc" placeholder="Contexto ou observação..."
+                                           class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Prazo estimado</label>
+                                    <input type="date" id="queue-deadline"
+                                           class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                </div>
+                                <button type="submit"
+                                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-plus"></i> Adicionar à Fila
+                                </button>
+                            </form>
+                        </section>
+
+                        <!-- Gerenciar Sistemas -->
+                        <section class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                            <h2 class="text-sm font-bold mb-3 text-gray-800 flex items-center gap-2">
+                                <i class="fa-solid fa-folder-plus text-indigo-500"></i> Sistemas
+                            </h2>
+                            <form id="system-form" class="flex gap-2 mb-3">
+                                <input type="text" id="new-system-name" required placeholder="Ex: JPe, Themis, SIAP"
+                                       class="flex-1 text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                <button type="submit"
+                                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg cursor-pointer shrink-0">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </form>
+                            <ul id="system-list" class="space-y-1.5"></ul>
+                        </section>
+
+                    </div>
+
+                    <!-- COLUNA DIREITA: Fila agrupada por sistema -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-bold text-gray-700">Aguardando Entrada</h3>
+                                <span id="queue-list-count" class="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">0</span>
+                            </div>
+                            <input type="text" id="queue-search" oninput="renderQueueView()"
+                                   placeholder="Filtrar código ou sistema..."
+                                   class="text-xs px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white w-48">
+                        </div>
+                        <div id="queue-groups" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                    </div>
+
+                </div>
+            </div><!-- end view-queue -->
+
         </main>
 
         <!-- ═══════════════════════════════════════════════════
@@ -541,7 +649,7 @@
     <script src="persistence.js"></script>
     <script src="ui.js"></script>
     <script src="demands.js"></script>
-    <script src="report.js"></script>
+    <script src="queue.js"></script>
     <script>
         // Registro do Service Worker (PWA)
         if ('serviceWorker' in navigator) {
