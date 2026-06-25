@@ -7,11 +7,16 @@ let demands = [];
 // ── Utilitários ─────────────────────────────────────────────
 
 function getJiraIcon(title) {
-    const upper = title.toUpperCase();
-    if (/^(DEVCOJIN3-|CDNCOJIN3-)/.test(upper))
-        return '<i class="fa-solid fa-bolt text-purple-500 mr-1.5" title="Desenvolvimento/Jira"></i>';
+    const upper = title.replace(/\[.*?\]/g, '').trim().toUpperCase();
+    // Incidente: IN seguido de números (ex: IN2314172)
+    if (/^IN\d+/.test(upper))
+        return '<i class="fa-solid fa-bug text-orange-500 mr-1.5" title="Incidente"></i>';
+    // Chamado: CH seguido de números ou palavra CHAMADO
     if (/^CH\d+/.test(upper) || upper.startsWith('CHAMADO'))
         return '<i class="fa-solid fa-bug text-red-500 mr-1.5" title="Chamado"></i>';
+    // DEVCOJIN e CDNCOJIN: também bug (inseto), mesma cor dos chamados
+    if (/^(DEVCOJIN3?-|CDNCOJIN3?-)/.test(upper))
+        return '<i class="fa-solid fa-bug text-red-500 mr-1.5" title="Jira"></i>';
     return '<i class="fa-solid fa-circle-nodes text-gray-400 mr-1.5"></i>';
 }
 
@@ -60,7 +65,7 @@ function getTagBadges(tags) {
 }
 
 function getQuadrantLabel(q) {
-    const map = { q1: 'Q1 Fazer Agora', q2: 'Q2 Agendar', q3: 'Q3 Delegar', q4: 'Q4 Eliminar', support_inbox: 'Fila Suporte' };
+    const map = { q1: 'Q1 Fazer Agora', q2: 'Q2 Agendar', q3: 'Q3 Delegar', q4: 'Q4 Eliminar' };
     return map[q] || q;
 }
 
@@ -123,24 +128,7 @@ form.addEventListener('submit', async (e) => {
     showToast('Demanda adicionada!');
 });
 
-async function enviarFilaSuporte(e) {
-    e.preventDefault();
-    const input = document.getElementById('support-task-title');
-    const title = input.value.trim();
-    if (!title) return;
-    if (demands.some(d => !d.archived && d.title.toLowerCase() === title.toLowerCase())) {
-        showToast('Essa demanda já existe!', 'warning'); return;
-    }
-    demands.push({
-        id: Date.now().toString(), title,
-        description: '', deadline: null, quadrant: 'support_inbox',
-        completed: false, archived: false, completedAt: null,
-        tags: [], history: [{ date: new Date().toLocaleDateString('pt-BR').substring(0,5), from: null, to: 'support_inbox', note: 'Criada via Fila Suporte' }],
-    });
-    input.value = '';
-    await updateApp();
-}
-document.getElementById('support-form').addEventListener('submit', enviarFilaSuporte);
+// support-form removido — substituído pelo quick-queue-form na sidebar
 
 function toggleComplete(id, fromWorkload = false) {
     demands = demands.map(item => {
@@ -185,7 +173,7 @@ function unarchiveDemand(id) {
 // ── Drag & Drop ─────────────────────────────────────────────
 
 function initDragAndDrop() {
-    ['list-support_inbox', 'list-q1', 'list-q2', 'list-q3', 'list-q4'].forEach(listId => {
+    ['list-q1', 'list-q2', 'list-q3', 'list-q4'].forEach(listId => {
         const el = document.getElementById(listId);
         if (!el || el.sortableInstance) return;
         el.sortableInstance = new Sortable(el, {
@@ -219,7 +207,7 @@ function initDragAndDrop() {
 
 function renderDemands() {
     const searchTerm = searchInput.value.toLowerCase().trim();
-    const quadrants  = { support_inbox: [], q1: [], q2: [], q3: [], q4: [] };
+    const quadrants  = { q1: [], q2: [], q3: [], q4: [] };
     const archivedList = [];
     const todayStr   = new Date().toISOString().split('T')[0];
 
@@ -274,7 +262,27 @@ function renderDemands() {
         if (currentStatusFilter === 'pending'   &&  demand.completed) matches = false;
         if (currentStatusFilter === 'completed' && !demand.completed) matches = false;
         if (selectedSystemFilter && (!systemMatch || systemMatch[1].trim() !== selectedSystemFilter)) matches = false;
-        if (matches) quadrants[demand.quadrant].push(demand);
+
+        // Filtro de prazo clicável
+        if (deadlineFilter && !demand.completed) {
+            const dl = demand.deadline;
+            if (deadlineFilter === 'overdue') {
+                if (!dl || dl >= todayStr) matches = false;
+            } else if (deadlineFilter === 'today') {
+                if (dl !== todayStr) matches = false;
+            } else if (deadlineFilter === 'ontime') {
+                if (!dl || dl <= todayStr) matches = false;
+            }
+        } else if (deadlineFilter) {
+            // se tem filtro de prazo mas a demanda está concluída, esconde
+            matches = false;
+        }
+
+        if (matches) {
+            // Demandas legadas com support_inbox vão para q2
+            const q = demand.quadrant === 'support_inbox' ? 'q2' : demand.quadrant;
+            if (quadrants[q]) quadrants[q].push(demand);
+        }
     });
 
     // Atualiza indicadores
@@ -373,8 +381,10 @@ function renderTeamWorkload(teamWorkload) {
 
 function renderQuadrants(quadrants) {
     Object.keys(quadrants).forEach(q => {
-        const listEl = document.getElementById(`list-${q}`);
-        document.getElementById(`count-${q}`).innerText = quadrants[q].length;
+        const listEl  = document.getElementById(`list-${q}`);
+        const countEl = document.getElementById(`count-${q}`);
+        if (!listEl || !countEl) return; // segurança: pula quadrantes sem elemento no DOM
+        countEl.innerText = quadrants[q].length;
 
         quadrants[q].sort((a, b) => {
             if (a.completed !== b.completed) return a.completed ? 1 : -1;
@@ -394,8 +404,8 @@ function renderQuadrants(quadrants) {
         quadrants[q].forEach(item => {
             const li = document.createElement('li');
             const isExpanded = expandedTaskId === item.id;
-            li.className = `flex flex-col p-2.5 bg-gray-50 border border-gray-200 rounded-lg transition cursor-grab active:cursor-grabbing select-none ${
-                item.completed ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-100 shadow-2xs'}`;
+            const doneClass  = item.completed ? 'demand-card--done opacity-50' : 'shadow-2xs';
+            li.className = `demand-card flex flex-col p-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-grab active:cursor-grabbing select-none ${doneClass}`;
             li.setAttribute('data-id', item.id);
             li.setAttribute('onclick', `toggleExpand('${item.id}', event)`);
 

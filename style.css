@@ -136,3 +136,43 @@ body.dark-mode div.border-green-500 { border-top-color: #22c55e !important; }
 body.dark-mode .theme-btn        { border-color: #1d3040; }
 body.dark-mode .theme-btn:hover  { background-color: #112136; }
 body.dark-mode .theme-btn.active { background-color: #1d3a54; border-color: #2d5070; }
+
+/* ===== NEON HOVER NOS CARDS POR QUADRANTE ===== */
+
+/* Variáveis de cor neon por quadrante */
+#quadrant-q1 { --neon-color: #ef4444; --neon-mid: rgba(239,68,68,0.25); --neon-soft: rgba(239,68,68,0.08); }
+#quadrant-q2 { --neon-color: #3b82f6; --neon-mid: rgba(59,130,246,0.25); --neon-soft: rgba(59,130,246,0.08); }
+#quadrant-q3 { --neon-color: #f59e0b; --neon-mid: rgba(245,158,11,0.25);  --neon-soft: rgba(245,158,11,0.08); }
+#quadrant-q4 { --neon-color: #6b7280; --neon-mid: rgba(107,114,128,0.25); --neon-soft: rgba(107,114,128,0.08); }
+
+/* Card base — prepara transição */
+.demand-card {
+    transition:
+        border-color 0.25s ease,
+        box-shadow   0.25s ease,
+        background   0.25s ease;
+}
+
+/* Hover neon — herda a cor do quadrante pai */
+.demand-card:not(.demand-card--done):hover {
+    border-color: var(--neon-color) !important;
+    background:   var(--neon-soft)  !important;
+    box-shadow:
+        0 0 0 1px  var(--neon-color),
+        0 0 8px    var(--neon-mid),
+        0 0 20px   var(--neon-soft);
+}
+
+/* Dark mode: brilho mais intenso */
+body.dark-mode .demand-card:not(.demand-card--done):hover {
+    box-shadow:
+        0 0 0 1px  var(--neon-color),
+        0 0 10px   var(--neon-mid),
+        0 0 28px   var(--neon-soft),
+        inset 0 0 8px rgba(255,255,255,0.02);
+}
+
+/* Cards concluídos não recebem neon */
+.demand-card--done {
+    transition: opacity 0.2s ease;
+}

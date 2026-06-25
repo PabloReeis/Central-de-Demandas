@@ -68,6 +68,7 @@ async function loadQueueFromSupabase() {
     renderSystemList();
     renderQueueSystemSelect();
     renderQueueView();
+    renderSidebarQueuePreview();
     updateQueueBadge();
 }
 
@@ -107,15 +108,23 @@ function switchTab(tab) {
 
 // ── Gerenciar Sistemas ────────────────────────────────────────
 
-document.getElementById('system-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('new-system-name');
-    const name  = input.value.trim();
+// ── Formulário inline de sistema ─────────────────────────────
+
+function toggleInlineSystemForm() {
+    const form  = document.getElementById('inline-system-form');
+    const input = document.getElementById('inline-system-name');
+    if (!form) return;
+    const isHidden = form.classList.toggle('hidden');
+    if (!isHidden) setTimeout(() => input?.focus(), 50);
+}
+
+async function addInlineSystem() {
+    const input = document.getElementById('inline-system-name');
+    const name  = input?.value.trim();
     if (!name) return;
     if (queueSystems.some(s => s.toLowerCase() === name.toLowerCase())) {
         showToast('Sistema já existe!', 'warning'); return;
     }
-
     try {
         if (isSupabaseConfigured()) {
             await sbPost('queue_systems', { id: Date.now().toString(), name, position: queueSystems.length });
@@ -124,12 +133,26 @@ document.getElementById('system-form').addEventListener('submit', async (e) => {
         saveQueueLocal();
         renderSystemList();
         renderQueueSystemSelect();
+        // Seleciona automaticamente o sistema recém-criado
+        const sel = document.getElementById('queue-system');
+        if (sel) sel.value = name;
         input.value = '';
-        input.focus();
+        toggleInlineSystemForm();
         showToast(`Sistema "${name}" adicionado!`);
     } catch (err) {
         console.error(err);
         showToast('Erro ao salvar sistema.', 'error');
+    }
+}
+
+// Enter no campo inline também salva
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.activeElement?.id === 'inline-system-name') {
+        e.preventDefault();
+        addInlineSystem();
+    }
+    if (e.key === 'Escape' && document.activeElement?.id === 'inline-system-name') {
+        toggleInlineSystemForm();
     }
 });
 
@@ -269,8 +292,9 @@ async function approveQueueItem(id) {
         saveQueueLocal();
         renderQueueView();
         renderSystemList();
+        renderSidebarQueuePreview();
         await updateApp();
-        showToast(`✅ "${item.title}" aprovada e enviada para Q2!`);
+        showToast('✅ "' + item.title + '" aprovada e enviada para Q2!');
     } catch (err) {
         console.error(err);
         showToast('Erro ao aprovar demanda.', 'error');
@@ -291,6 +315,7 @@ function rejectQueueItem(id) {
             saveQueueLocal();
             renderQueueView();
             renderSystemList();
+            renderSidebarQueuePreview();
             showToast('Removida da fila.', 'error');
         } catch (err) {
             console.error(err);
@@ -389,6 +414,87 @@ function renderQueueView() {
     }).join('');
 }
 
+// ── Formulário rápido na sidebar ─────────────────────────────
+
+function renderSidebarQueuePreview() {
+    const container = document.getElementById('sidebar-queue-preview');
+    const sel       = document.getElementById('quick-queue-system');
+    if (!container) return;
+
+    // Atualiza select do formulário rápido
+    if (sel) {
+        const current = sel.value;
+        sel.innerHTML = '<option value="">Sistema...</option>' +
+            queueSystems.map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${s}</option>`).join('');
+    }
+
+    if (entryQueue.length === 0) {
+        container.innerHTML = '<p class="text-[11px] text-gray-400 italic text-center py-2">Fila vazia.</p>';
+        return;
+    }
+
+    // Agrupa por sistema
+    const grouped = {};
+    queueSystems.forEach(s => { grouped[s] = []; });
+    entryQueue.forEach(q => {
+        if (!grouped[q.system]) grouped[q.system] = [];
+        grouped[q.system].push(q);
+    });
+
+    const systems = queueSystems.filter(s => grouped[s]?.length > 0);
+
+    let html = '';
+    systems.forEach(sys => {
+        html += '<div class="mb-2">';
+        html += '<p class="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">';
+        html += '<i class="fa-solid fa-folder text-indigo-400 text-[9px]"></i> ' + sys;
+        html += ' <span class="bg-indigo-100 text-indigo-600 px-1 rounded text-[9px] font-bold">' + grouped[sys].length + '</span>';
+        html += '</p><ul class="space-y-0.5 pl-1">';
+        grouped[sys].forEach(item => {
+            const icon = getJiraIcon(item.title);
+            html += '<li class="flex items-center justify-between gap-1 py-0.5 px-1.5 rounded hover:bg-gray-100 group">';
+            html += '<span class="truncate flex items-center gap-1 text-[10px] text-gray-700 font-mono">' + icon + item.title + '</span>';
+            html += '<button onclick="approveQueueItem(\'' + item.id + '\')" ';
+            html += 'class="shrink-0 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded px-1 py-0.5 cursor-pointer transition text-[9px] font-bold whitespace-nowrap" ';
+            html += 'title="Aprovar → Q2">✓ Q2</button>';
+            html += '</li>';
+        });
+        html += '</ul></div>';
+    });
+
+    container.innerHTML = html;
+}
+
+const quickQueueForm = document.getElementById('quick-queue-form');
+if (quickQueueForm) {
+    quickQueueForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title  = document.getElementById('quick-queue-title').value.trim();
+        const system = document.getElementById('quick-queue-system').value;
+        if (!title || !system) { showToast('Preencha o código e o sistema!', 'warning'); return; }
+        if (entryQueue.some(q => q.system === system && q.title.toLowerCase() === title.toLowerCase())) {
+            showToast('Já está na fila!', 'warning'); return;
+        }
+        const id        = Date.now().toString();
+        const createdAt = new Date().toLocaleDateString('pt-BR').substring(0, 5);
+        try {
+            if (isSupabaseConfigured()) {
+                await sbPost('entry_queue', { id, title, system, created_day: createdAt });
+            }
+            entryQueue.push({ id, title, system, developer: null, description: null, deadline: null, createdAt });
+            saveQueueLocal();
+            renderSidebarQueuePreview();
+            renderQueueView();
+            renderSystemList();
+            document.getElementById('quick-queue-title').value = '';
+            showToast('Adicionado à fila!');
+        } catch (err) {
+            console.error(err);
+            showToast('Erro ao salvar.', 'error');
+        }
+    });
+}
+
 // ── Init ──────────────────────────────────────────────────────
 
 if (isSupabaseConfigured()) {
@@ -398,5 +504,6 @@ if (isSupabaseConfigured()) {
     queueSystems = JSON.parse(localStorage.getItem(SYSTEMS_KEY) || '[]');
     renderSystemList();
     renderQueueSystemSelect();
+    renderSidebarQueuePreview();
     updateQueueBadge();
 }

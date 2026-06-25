@@ -123,35 +123,34 @@
 
             <hr class="border-gray-100">
 
-            <!-- Inserção Rápida -->
-            <div class="space-y-3">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-bolt text-amber-500"></i> Inserção Rápida
-                </h3>
-                <div class="flex flex-wrap gap-1.5">
-                    <button onclick="injectPrefix('DEVCOJIN3-')" class="text-xs bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 px-2 py-1 rounded-md font-medium transition cursor-pointer">+ DEVCOJIN3-</button>
-                    <button onclick="injectPrefix('SICC x ')"    class="text-xs bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 px-2 py-1 rounded-md font-medium transition cursor-pointer">+ SICC x</button>
-                    <button onclick="injectPrefix('CH')"         class="text-xs bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200 px-2 py-1 rounded-md font-medium transition cursor-pointer">+ CH</button>
-                </div>
-            </div>
-
-            <hr class="border-gray-100">
-
-            <!-- Fila Suporte -->
+            <!-- Fila de Entrada Rápida -->
             <div>
                 <div class="flex justify-between items-center mb-1.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-inbox text-indigo-500"></i> Fila Suporte
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Fila de Entrada
                     </h3>
-                    <span id="count-support_inbox" class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+                    <button onclick="switchTab('queue')"
+                            class="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium cursor-pointer">
+                        Ver tudo →
+                    </button>
                 </div>
-                <form id="support-form" class="flex gap-1.5 mb-2">
-                    <input type="text" id="support-task-title" required placeholder="Código/Sistema"
-                           class="flex-1 text-[10px] px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-medium py-1 px-2 rounded transition cursor-pointer">Enviar</button>
+                <!-- Input rápido: título + sistema -->
+                <form id="quick-queue-form" class="flex flex-col gap-1.5 mb-2">
+                    <input type="text" id="quick-queue-title" required placeholder="Código (ex: CDNCOJIN3-1418)"
+                           class="w-full text-[10px] px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white">
+                    <div class="flex gap-1.5">
+                        <select id="quick-queue-system" required
+                                class="flex-1 text-[10px] px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white">
+                            <option value="">Sistema...</option>
+                        </select>
+                        <button type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-medium py-1 px-2.5 rounded-lg transition cursor-pointer shrink-0">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
                 </form>
-                <ul id="list-support_inbox" data-quadrant="support_inbox"
-                    class="space-y-1.5 min-h-[50px] max-h-48 overflow-y-auto border-2 border-dashed border-gray-100 rounded-lg p-1.5 bg-gray-50/30"></ul>
+                <!-- Preview dos itens na fila -->
+                <div id="sidebar-queue-preview" class="space-y-1 max-h-52 overflow-y-auto"></div>
             </div>
 
         </aside>
@@ -183,18 +182,21 @@
                     <i class="fa-regular fa-calendar-check text-indigo-500 text-lg"></i> Prazos Ativos
                 </h3>
                 <div class="flex flex-wrap gap-2 w-full lg:w-auto">
-                    <div class="flex-1 lg:flex-none p-2 rounded-lg bg-red-50 border border-red-100 flex justify-between lg:gap-4 items-center text-xs">
+                    <button onclick="setDeadlineFilter('overdue')" id="btn-deadline-overdue"
+                            class="deadline-filter-btn flex-1 lg:flex-none p-2 rounded-lg bg-red-50 border border-red-100 flex justify-between lg:gap-4 items-center text-xs cursor-pointer hover:border-red-400 transition">
                         <span class="font-medium text-red-800 flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-red-500 animate-ping"></i> Atrasadas</span>
                         <span id="side-count-overdue" class="font-bold bg-red-200 text-red-900 px-2 py-0.5 rounded-full">0</span>
-                    </div>
-                    <div class="flex-1 lg:flex-none p-2 rounded-lg bg-amber-50 border border-amber-100 flex justify-between lg:gap-4 items-center text-xs">
+                    </button>
+                    <button onclick="setDeadlineFilter('today')" id="btn-deadline-today"
+                            class="deadline-filter-btn flex-1 lg:flex-none p-2 rounded-lg bg-amber-50 border border-amber-100 flex justify-between lg:gap-4 items-center text-xs cursor-pointer hover:border-amber-400 transition">
                         <span class="font-medium text-amber-800 flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-amber-500"></i> Vence Hoje</span>
                         <span id="side-count-today" class="font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">0</span>
-                    </div>
-                    <div class="flex-1 lg:flex-none p-2 rounded-lg bg-emerald-50 border border-emerald-100 flex justify-between lg:gap-4 items-center text-xs">
+                    </button>
+                    <button onclick="setDeadlineFilter('ontime')" id="btn-deadline-ontime"
+                            class="deadline-filter-btn flex-1 lg:flex-none p-2 rounded-lg bg-emerald-50 border border-emerald-100 flex justify-between lg:gap-4 items-center text-xs cursor-pointer hover:border-emerald-400 transition">
                         <span class="font-medium text-emerald-800 flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-emerald-500"></i> No Prazo</span>
                         <span id="side-count-on-time" class="font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">0</span>
-                    </div>
+                    </button>
                 </div>
             </header>
 
@@ -320,10 +322,29 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Sistema <span class="text-red-500">*</span></label>
-                                    <select id="queue-system" required
-                                            class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-                                        <option value="">Selecione o sistema...</option>
-                                    </select>
+                                    <div class="flex gap-1.5">
+                                        <select id="queue-system" required
+                                                class="flex-1 text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                            <option value="">Selecione o sistema...</option>
+                                        </select>
+                                        <button type="button" onclick="toggleInlineSystemForm()"
+                                                class="shrink-0 bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-300 text-gray-500 text-xs px-2.5 rounded-lg cursor-pointer transition" title="Adicionar sistema">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Formulário inline de novo sistema -->
+                                    <div id="inline-system-form" class="hidden mt-2 flex gap-1.5">
+                                        <input type="text" id="inline-system-name" placeholder="Nome do sistema..."
+                                               class="flex-1 text-xs px-2.5 py-1.5 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                                        <button type="button" onclick="addInlineSystem()"
+                                                class="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1.5 rounded-lg cursor-pointer">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                        <button type="button" onclick="toggleInlineSystemForm()"
+                                                class="shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-500 text-xs px-2 py-1.5 rounded-lg cursor-pointer">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Responsável</label>
@@ -347,19 +368,11 @@
                             </form>
                         </section>
 
-                        <!-- Gerenciar Sistemas -->
+                        <!-- Lista de sistemas cadastrados -->
                         <section class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
                             <h2 class="text-sm font-bold mb-3 text-gray-800 flex items-center gap-2">
-                                <i class="fa-solid fa-folder-plus text-indigo-500"></i> Sistemas
+                                <i class="fa-solid fa-folder text-indigo-500"></i> Sistemas Cadastrados
                             </h2>
-                            <form id="system-form" class="flex gap-2 mb-3">
-                                <input type="text" id="new-system-name" required placeholder="Ex: JPe, Themis, SIAP"
-                                       class="flex-1 text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-                                <button type="submit"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg cursor-pointer shrink-0">
-                                    <i class="fa-solid fa-plus"></i>
-                                </button>
-                            </form>
                             <ul id="system-list" class="space-y-1.5"></ul>
                         </section>
 

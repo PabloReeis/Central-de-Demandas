@@ -119,6 +119,25 @@ function toggleSidebar(open) {
 
 let currentStatusFilter  = 'all';
 let selectedSystemFilter = null;
+let deadlineFilter       = null; // 'overdue' | 'today' | 'ontime' | null
+
+function setDeadlineFilter(filter) {
+    deadlineFilter = (deadlineFilter === filter) ? null : filter;
+
+    // Atualiza visual dos botões
+    ['overdue', 'today', 'ontime'].forEach(f => {
+        const btn = document.getElementById(`btn-deadline-${f}`);
+        if (!btn) return;
+        const active = deadlineFilter === f;
+        const borders = { overdue: 'border-red-500', today: 'border-amber-500', ontime: 'border-emerald-500' };
+        btn.classList.toggle(borders[f], active);
+        btn.classList.toggle('ring-2', active);
+        const rings = { overdue: 'ring-red-300', today: 'ring-amber-300', ontime: 'ring-emerald-300' };
+        btn.classList.toggle(rings[f], active);
+    });
+
+    renderDemands();
+}
 
 function setStatusFilter(filter) {
     currentStatusFilter = filter;
