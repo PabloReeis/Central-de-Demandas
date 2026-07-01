@@ -1,5 +1,5 @@
 // sw.js — Service Worker para cache offline (PWA)
-const CACHE_NAME = 'central-v3-cache-v1';
+const CACHE_NAME = 'central-v3-cache-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -7,6 +7,10 @@ const ASSETS = [
     './persistence.js',
     './ui.js',
     './demands.js',
+    './report.js',
+    './workload.js',
+    './webhooks.js',
+    './queue.js',
     './manifest.json',
 ];
 

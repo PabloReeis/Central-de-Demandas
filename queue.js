@@ -56,6 +56,7 @@ async function loadQueueFromSupabase() {
             description: q.description || null,
             deadline:    q.deadline    || null,
             createdAt:   q.created_day || '',
+            source:      q.source      || null,
         }));
         // Fallback para localStorage
         localStorage.setItem(QUEUE_KEY,   JSON.stringify(entryQueue));
@@ -240,6 +241,7 @@ document.getElementById('queue-form').addEventListener('submit', async (e) => {
                 description: desc     || null,
                 deadline:    deadline || null,
                 created_day: createdAt,
+                source:      null,
             });
         }
         entryQueue.push({ id, title, system, developer: dev || null, description: desc || null, deadline, createdAt });
@@ -372,12 +374,23 @@ function renderQueueView() {
             const descLabel = item.description
                 ? `<p class="text-[10px] text-gray-400 truncate mt-0.5">${item.description}</p>`
                 : '';
+            const isWebhook     = item.source === 'webhook';
+            const cardBg        = isWebhook
+                ? 'border-orange-300 bg-orange-50/60 hover:border-orange-400 hover:bg-orange-50'
+                : 'border-gray-100 bg-gray-50 hover:border-indigo-200 hover:bg-indigo-50/30';
+            const webhookBadge  = isWebhook
+                ? `<span class="text-[9px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-1 animate-pulse-slow">
+                       <i class="fa-solid fa-link text-[8px]"></i> Via n8n
+                   </span>`
+                : '';
             return `
-                <div class="flex items-start gap-2 p-2.5 rounded-lg border border-gray-100 bg-gray-50 hover:border-indigo-200 hover:bg-indigo-50/30 transition group">
-                    <span class="text-[10px] font-bold text-gray-300 w-4 pt-0.5 shrink-0">${idx + 1}</span>
+                <div class="flex items-start gap-2 p-2.5 rounded-lg border ${cardBg} transition group relative">
+                    ${isWebhook ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l-lg"></div>' : ''}
+                    <span class="text-[10px] font-bold text-gray-300 w-4 pt-0.5 shrink-0 ${isWebhook ? 'ml-2' : ''}">${idx + 1}</span>
                     <div class="flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-1">
-                            <span class="text-xs font-mono font-semibold text-gray-800">${icon}${item.title}</span>
+                            <span class="text-xs font-mono font-semibold ${isWebhook ? 'text-orange-900' : 'text-gray-800'}">${icon}${item.title}</span>
+                            ${webhookBadge}
                             ${deadlineBadge}
                         </div>
                         <div class="flex flex-wrap items-center gap-2 mt-0.5">
@@ -401,13 +414,22 @@ function renderQueueView() {
                 </div>`;
         }).join('');
 
+        const webhookCount = items.filter(i => i.source === 'webhook').length;
+        const webhookIndicator = webhookCount > 0
+            ? `<span class="text-[9px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                   <i class="fa-solid fa-link text-[8px]"></i>${webhookCount} n8n
+               </span>`
+            : '';
         return `
-            <div class="bg-white rounded-xl border-t-4 border-t-indigo-400 border-x border-b border-gray-200 shadow-xs overflow-hidden">
+            <div class="bg-white rounded-xl border-t-4 ${items.some(i => i.source === 'webhook') ? 'border-t-orange-400' : 'border-t-indigo-400'} border-x border-b border-gray-200 shadow-xs overflow-hidden">
                 <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                     <h3 class="text-sm font-bold text-gray-800 flex items-center gap-1.5">
                         <i class="fa-solid fa-folder text-indigo-400 text-xs"></i> ${system}
                     </h3>
-                    <span class="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">${items.length}</span>
+                    <div class="flex items-center gap-1.5">
+                        ${webhookIndicator}
+                        <span class="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">${items.length}</span>
+                    </div>
                 </div>
                 <div class="p-3 flex flex-col gap-1.5">${rows}</div>
             </div>`;

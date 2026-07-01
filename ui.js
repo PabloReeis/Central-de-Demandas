@@ -239,6 +239,8 @@ document.addEventListener('keydown', (e) => {
         if (!editModal.classList.contains('hidden')) closeEditModal();
         const reportModal = document.getElementById('report-modal');
         if (reportModal && !reportModal.classList.contains('hidden')) closeReportModal();
+        const workloadModal = document.getElementById('workload-modal');
+        if (workloadModal && !workloadModal.classList.contains('hidden')) closeWorkloadModal();
         const confirm = document.getElementById('app-confirm');
         if (confirm) confirm.remove();
     }

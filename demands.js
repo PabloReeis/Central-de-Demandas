@@ -297,7 +297,6 @@ function renderDemands() {
     document.getElementById('progress-bar-fill').style.width  = `${rate}%`;
 
     renderSystemFilter(systemCounts);
-    renderTeamWorkload(teamWorkload);
     renderQuadrants(quadrants);
     renderArchiveList(archivedList);
     initDragAndDrop();
@@ -343,41 +342,7 @@ function renderSystemFilter(systemCounts) {
     });
 }
 
-function renderTeamWorkload(teamWorkload) {
-    const el = document.getElementById('team-workload-list');
-    if (!el) return;
-    const systems = Object.keys(teamWorkload).sort();
-    if (systems.length === 0) {
-        el.innerHTML = `<span class="text-[11px] text-gray-400 italic">Nenhuma atribuição detectada...</span>`;
-        return;
-    }
-    el.innerHTML = systems.map(sys => `
-        <div class="mb-3">
-            <div class="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-gray-500 border-b border-gray-50 pb-0.5 uppercase">
-                <i class="fa-solid fa-folder-tree text-indigo-400"></i> ${sys}
-            </div>
-            <div class="flex flex-col gap-1.5 pl-2">
-                ${Object.keys(teamWorkload[sys]).sort().map(name => {
-                    const dev    = teamWorkload[sys][name];
-                    const isOver = dev.totalCount >= 5;
-                    return `
-                        <div class="flex flex-col gap-1">
-                            <div class="flex justify-between items-center text-[11px] ${isOver ? 'text-red-600 font-bold' : 'text-gray-700'}">
-                                <span class="truncate">${isOver ? '⚠️ ' : ''}${name}</span>
-                                <span class="${isOver ? 'bg-red-600 text-white' : 'bg-indigo-100 text-indigo-700'} px-1.5 py-0.5 rounded-full font-bold text-[9px]">${dev.totalCount}</span>
-                            </div>
-                            <ul class="space-y-1">
-                                ${dev.activeCards.map(c => `
-                                    <li class="bg-gray-50 border border-gray-200 rounded p-1 text-[10px] flex justify-between items-center">
-                                        <span class="truncate font-mono">${c.title}</span>
-                                        <button onclick="toggleComplete('${c.id}', true)" class="text-gray-400 hover:text-emerald-600"><i class="fa-solid fa-check"></i></button>
-                                    </li>`).join('')}
-                            </ul>
-                        </div>`;
-                }).join('')}
-            </div>
-        </div>`).join('');
-}
+// renderTeamWorkload foi movida para workload.js
 
 function renderQuadrants(quadrants) {
     Object.keys(quadrants).forEach(q => {

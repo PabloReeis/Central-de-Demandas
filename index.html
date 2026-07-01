@@ -24,6 +24,9 @@
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen overflow-x-hidden">
 
+    <!-- ═══ BANNERS DE ALERTA DE SISTEMA ═══ -->
+    <div id="alert-banners" class="fixed top-0 left-0 right-0 z-[9990] flex flex-col gap-0 pointer-events-none"></div>
+
     <div class="flex flex-col xl:flex-row min-h-screen">
 
         <!-- ═══════════════════════════════════════════════════
@@ -402,30 +405,25 @@
         ════════════════════════════════════════════════════ -->
         <aside class="w-full xl:w-80 bg-white border-t xl:border-t-0 xl:border-l border-gray-200 p-5 flex flex-col gap-[20px] shrink-0 xl:sticky xl:top-0 xl:h-screen overflow-y-auto">
 
-            <!-- Botões de tema -->
-            <div class="flex items-center justify-end gap-1.5 -mb-2">
-                <span class="text-[10px] text-gray-400 mr-1 font-medium uppercase tracking-wide">Tema</span>
-                <button id="btn-theme-light" onclick="setTheme('light')" class="theme-btn active" title="Tema Claro">☀️</button>
-                <button id="btn-theme-dark"  onclick="setTheme('dark')"  class="theme-btn"        title="Tema Escuro">🌙</button>
-            </div>
-
-            <!-- Carga de trabalho -->
-            <div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-                    <i class="fa-solid fa-users text-indigo-500"></i> 👥 CARGA DE TRABALHO DA EQUIPE
-                </h3>
-                <div id="team-workload-list" class="space-y-3">
-                    <span class="text-[11px] text-gray-400 italic">Nenhuma atribuição detectada...</span>
+            <!-- Botões de tema + Equipe -->
+            <div class="flex items-center justify-between gap-1.5 -mb-2">
+                <button onclick="openWorkloadModal()" class="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-gray-200 transition cursor-pointer">
+                    <i class="fa-solid fa-users text-indigo-500"></i> Equipe
+                </button>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] text-gray-400 mr-1 font-medium uppercase tracking-wide">Tema</span>
+                    <button id="btn-theme-light" onclick="setTheme('light')" class="theme-btn active" title="Tema Claro">☀️</button>
+                    <button id="btn-theme-dark"  onclick="setTheme('dark')"  class="theme-btn"        title="Tema Escuro">🌙</button>
                 </div>
             </div>
 
             <!-- Anotações rápidas -->
-            <div class="border-t border-gray-100 pt-4">
+            <div>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-                    <i class="fa-regular fa-note-sticky text-amber-500"></i> 📝 ANOTAÇÕES RÁPIDAS
+                    <i class="fa-regular fa-note-sticky text-amber-500"></i> ANOTAÇÕES RÁPIDAS
                 </h3>
                 <textarea id="scratchpad" oninput="saveScratchpad()" placeholder="Suas notas aqui..."
-                          class="w-full h-48 text-[11px] p-3 bg-slate-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none font-mono resize-none leading-relaxed shadow-inner"></textarea>
+                          class="w-full h-52 text-[11px] p-3 bg-slate-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none font-mono resize-none leading-relaxed shadow-inner"></textarea>
                 <div class="mt-2 pt-2 border-t border-gray-100">
                     <p class="text-[9px] font-bold uppercase text-gray-400 mb-1.5">Ideias Detectadas:</p>
                     <ul id="scratch-ideas-list" class="space-y-1 max-h-40 overflow-y-auto pr-1"></ul>
@@ -435,7 +433,7 @@
             <!-- Zona de concluídas -->
             <div class="border-t border-gray-100 pt-4">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-                    <i class="fa-solid fa-check-double text-emerald-500"></i> CONCLUÍDAS / NÃO ATRIBUÍDAS
+                    <i class="fa-solid fa-check-double text-emerald-500"></i> CONCLUÍDAS
                 </h3>
                 <div id="workload-completed-zone" data-zone="completed"
                      class="space-y-2 min-h-[50px] border-2 border-dashed border-gray-100 rounded-lg p-2 bg-gray-50/30">
@@ -445,12 +443,13 @@
 
             <!-- Exportar / Importar -->
             <div class="mt-auto pt-4 border-t border-gray-100">
+                <p class="text-[9px] font-bold uppercase text-gray-400 mb-2">Dados</p>
                 <div class="flex gap-2">
                     <button onclick="exportData()" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer shadow-xs">
-                        💾 Exportar Backup
+                        💾 Exportar
                     </button>
                     <button onclick="importData()" class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-[10px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer shadow-xs">
-                        📂 Importar Backup
+                        📂 Importar
                     </button>
                 </div>
             </div>
@@ -658,11 +657,53 @@
         </div>
     </div>
 
+    <!-- ═══ MODAL DE CARGA DE TRABALHO DA EQUIPE ═══ -->
+    <div id="workload-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+
+            <!-- Header -->
+            <div class="p-4 bg-gradient-to-r from-slate-800 to-indigo-900 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/10 rounded-xl p-2.5">
+                        <i class="fa-solid fa-users text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm">Carga de Trabalho da Equipe</h3>
+                        <p class="text-[11px] text-slate-300">Demandas ativas por desenvolvedor</p>
+                    </div>
+                </div>
+                <button onclick="closeWorkloadModal()" class="text-white/60 hover:text-white p-2 rounded-lg cursor-pointer transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Conteúdo rolável -->
+            <div class="overflow-y-auto p-5 flex flex-col gap-5 bg-gray-50">
+
+                <!-- Resumo KPI -->
+                <div id="workload-kpi-row" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+                <!-- Cards de desenvolvedores -->
+                <div id="workload-dev-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+
+                <!-- Empty state -->
+                <div id="workload-empty" class="hidden flex flex-col items-center justify-center py-16 text-center gap-3">
+                    <div class="text-5xl">👥</div>
+                    <p class="text-gray-500 text-sm font-medium">Nenhuma atribuição detectada</p>
+                    <p class="text-gray-400 text-xs">Adicione o nome do desenvolvedor nas demandas para vê-las aqui.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- ═══ SCRIPTS (ordem importa) ═══ -->
     <script src="persistence.js"></script>
     <script src="ui.js"></script>
     <script src="demands.js"></script>
     <script src="report.js"></script>
+    <script src="workload.js"></script>
+    <script src="webhooks.js"></script>
     <script src="queue.js"></script>
     <script>
         // Registro do Service Worker (PWA)
